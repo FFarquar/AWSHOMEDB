@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+
+# SAM build artifacts
+.aws-sam/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
