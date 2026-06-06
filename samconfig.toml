@@ -1,11 +1,21 @@
 version = 0.1
 
-[default.deploy.parameters]
-stack_name = "AWSHOMEDB"
+[staging.deploy.parameters]
+stack_name = "AWSHOMEDB-STAGING"
 resolve_s3 = true
-s3_prefix = "AWSHOMEDB"
+s3_prefix = "AWSHOMEDB-STAGING"
 region = "ap-southeast-2"
-confirm_changeset = true
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
+
+[production.deploy.parameters]
+stack_name = "AWSHOMEDB-PROD"
+resolve_s3 = true
+s3_prefix = "AWSHOMEDB-PROD"
+region = "ap-southeast-2"
+confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 image_repositories = []
