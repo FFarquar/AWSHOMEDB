@@ -30,13 +30,13 @@ Resources:
       Timeout: 100
       Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # Give Create/Read/Update/Delete Permissions to the AWSHomeDBTable
         - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
+            TableName: !Ref AWSHomeDBTable
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
+          SAMPLE_TABLE: !Ref AWSHomeDBTable
       Events:
         Api:
           Type: Api
@@ -58,13 +58,13 @@ Resources:
       Timeout: 100
       Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # Give Create/Read/Update/Delete Permissions to the AWSHomeDBTable
         - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
+            TableName: !Ref AWSHomeDBTable
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
+          SAMPLE_TABLE: !Ref AWSHomeDBTable
       Events:
         Api:
           Type: Api
@@ -86,13 +86,13 @@ Resources:
       Timeout: 100
       Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # Give Create/Read/Update/Delete Permissions to the AWSHomeDBTable
         - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
+            TableName: !Ref AWSHomeDBTable
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
+          SAMPLE_TABLE: !Ref AWSHomeDBTable
       Events:
         Api:
           Type: Api
@@ -103,15 +103,82 @@ Resources:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
 
   # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
-  SampleTable:
-    Type: AWS::Serverless::SimpleTable
+  AWSHomeDBTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      PrimaryKey:
-        Name: id
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
+      TableName: !Sub "${AWS::StackName}-Data"
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+
+        - AttributeName: SK
+          AttributeType: S
+
+        - AttributeName: category
+          AttributeType: S
+
+        - AttributeName: purchasedFrom
+          AttributeType: S
+
+        - AttributeName: itemName
+          AttributeType: S
+
+        - AttributeName: warrantyExpiryDate
+          AttributeType: S
+
+        - AttributeName: entityType
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+
+        - AttributeName: SK
+          KeyType: RANGE
+
+      GlobalSecondaryIndexes:
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: PurchasedFromIndex
+          KeySchema:
+            - AttributeName: purchasedFrom
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: ItemNameIndex
+          KeySchema:
+            - AttributeName: itemName
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: WarrantyIndex
+          KeySchema:
+            - AttributeName: entityType
+              KeyType: HASH
+            - AttributeName: warrantyExpiryDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+      SSESpecification:
+        SSEEnabled: true
+
+      Tags:
+        - Key: Application
+          Value: AWSHomeDB
 
 Outputs:
   WebEndpoint:
