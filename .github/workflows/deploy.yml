@@ -1,6 +1,7 @@
 name: Deploy AWS SAM
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - develop
