@@ -70,7 +70,11 @@ export const handler = async (event) => {
       };
     }
 
-    const body = JSON.parse(event.body || '{}');
+    const rawBody = typeof event.body === 'string'
+      ? event.body
+      : JSON.stringify(event.body || {});
+
+    const body = rawBody ? JSON.parse(rawBody) : {};
     const loginID = body.loginID;
     const password = body.password;
 

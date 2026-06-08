@@ -38,6 +38,28 @@ describe('Test login handler', () => {
     expect(body.role).toBe('ADMIN');
   });
 
+  it('accepts an already-parsed body object', async () => {
+    ddbMock.on(QueryCommand).resolves({
+      Items: [
+        {
+          PK: 'USER#Dean_P',
+          SK: 'PROFILE',
+          loginID: 'Dean_P',
+          role: 'ADMIN',
+          active: true,
+          passwordHash: bcrypt.hashSync('secret', 10),
+        },
+      ],
+    });
+
+    const result = await handler({
+      httpMethod: 'POST',
+      body: { loginID: 'Dean_P', password: 'secret' },
+    });
+
+    expect(result.statusCode).toBe(200);
+  });
+
   it('rejects invalid credentials', async () => {
     ddbMock.on(QueryCommand).resolves({
       Items: [
