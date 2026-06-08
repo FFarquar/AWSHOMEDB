@@ -116,13 +116,12 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
-
-  Events:
-    GetContainers:
-      Type: Api
-      Properties:
-        Path: /containers
-        Method: GET
+      Events:
+        GetContainers:
+          Type: Api
+          Properties:
+            Path: /containers
+            Method: GET
 
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
