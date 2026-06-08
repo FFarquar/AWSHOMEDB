@@ -40,14 +40,18 @@ Resources:
           Properties:
             Path: /containers
             Method: GET
+            Auth:
+              Authorizer: AuthorizerFunction            
 
         GetContainerById:
           Type: Api
           Properties:
             Path: /containers/{id}
             Method: GET
+            Auth:
+              Authorizer: AuthorizerFunction
 
-  LoginFunction:
+  LoginFunctsion:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .

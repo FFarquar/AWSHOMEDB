@@ -33,7 +33,7 @@ const items = [
 
     "entityType": "USER",
     "loginID": "Guest",
-    "role": "USER",
+    "role": "GUEST",
     "active": true,
     "passwordHash" :"$2a$10$41LxGGMMEn5YCk9VvPN/gOlOGxFyDnJfuAhAE/oNmxDPcOMHp3sWG"
   },
