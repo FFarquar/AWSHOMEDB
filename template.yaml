@@ -22,7 +22,7 @@ Resources:
   ContainersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: src/handlers
       Handler: containers.handler
       Runtime: nodejs24.x
 
