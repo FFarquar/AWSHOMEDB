@@ -28,6 +28,9 @@ jobs:
 
       - uses: aws-actions/setup-sam@v2
 
+      - name: Install dependencies
+        run: npm install
+
       - run: sam build
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset
 
@@ -45,6 +48,9 @@ jobs:
           aws-region: ap-southeast-2
 
       - uses: aws-actions/setup-sam@v2
+
+      - name: Install dependencies
+        run: npm install
 
       - run: sam build
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset

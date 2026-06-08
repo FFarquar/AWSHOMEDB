@@ -22,8 +22,8 @@ Resources:
   ContainersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/handlers
-      Handler: containers.handler
+      CodeUri: .
+      Handler: src/handlers/containers.handler
       Runtime: nodejs24.x
 
       Environment:
@@ -50,8 +50,8 @@ Resources:
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/handlers
-      Handler: login.handler
+      CodeUri: .
+      Handler: src/handlers/login.handler
       Runtime: nodejs24.x
       Environment:
         Variables:
@@ -70,8 +70,8 @@ Resources:
   AuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/handlers
-      Handler: authorizer.handler
+      CodeUri: .
+      Handler: src/handlers/authorizer.handler
       Runtime: nodejs24.x
       Environment:
         Variables:
