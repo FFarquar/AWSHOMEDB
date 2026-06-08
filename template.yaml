@@ -15,18 +15,6 @@ Transform:
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  HomeApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Auth:
-        DefaultAuthorizer: LambdaAuthorizer
-        Authorizers:
-          LambdaAuthorizer:
-            FunctionArn: !GetAtt AuthorizerFunction.Arn
-            Identity:
-              Header: Authorization
-
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
@@ -50,20 +38,14 @@ Resources:
         GetContainers:
           Type: Api
           Properties:
-            RestApiId: !Ref HomeApi
             Path: /containers
             Method: GET
-            Auth:
-              Authorizer: LambdaAuthorizer
 
         GetContainerById:
           Type: Api
           Properties:
-            RestApiId: !Ref HomeApi
             Path: /containers/{id}
             Method: GET
-            Auth:
-              Authorizer: LambdaAuthorizer
 
   LoginFunction:
     Type: AWS::Serverless::Function
@@ -82,7 +64,6 @@ Resources:
         LoginUser:
           Type: Api
           Properties:
-            RestApiId: !Ref HomeApi
             Path: /login
             Method: POST
 
@@ -181,4 +162,4 @@ Resources:
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${HomeApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
