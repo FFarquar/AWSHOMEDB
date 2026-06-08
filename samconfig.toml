@@ -7,7 +7,7 @@ s3_prefix = "AWSHOMEDB-STAGING"
 region = "ap-southeast-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
-disable_rollback = true
+disable_rollback = false
 image_repositories = []
 
 [production.deploy.parameters]
@@ -17,7 +17,7 @@ s3_prefix = "AWSHOMEDB-PROD"
 region = "ap-southeast-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
-disable_rollback = true
+disable_rollback = false
 image_repositories = []
 
 [default.global.parameters]
