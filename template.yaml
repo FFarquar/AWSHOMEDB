@@ -19,21 +19,21 @@ Resources:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
   # Container item lambdas 
-  ContainerFunction:
+  ContainersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/container.handler
+      CodeUri: .
+      Handler: containers.handler
       Runtime: nodejs24.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 30
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AWSHomeDBTable
+
       Environment:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
+
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+
       Events:
         GetContainers:
           Type: Api
@@ -41,6 +41,12 @@ Resources:
             Path: /containers
             Method: GET
 
+        GetContainerById:
+          Type: Api
+          Properties:
+            Path: /containers/{id}
+            Method: GET
+  
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
 
