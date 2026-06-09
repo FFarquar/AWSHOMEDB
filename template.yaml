@@ -12,10 +12,16 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
-Parameters:
-  StageName:
-    Type: String
-    Default: Stage
+Globals:
+  Api:
+    Auth:
+      Authorizers:
+        LambdaTokenAuthorizer:
+          FunctionArn: !GetAtt AuthorizerFunction.Arn
+          FunctionPayloadType: TOKEN
+          Identity:
+            Headers:
+              - Authorization
 
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
@@ -43,7 +49,6 @@ Resources:
         GetContainers:
           Type: Api
           Properties:
-            RestApiId: !Ref ApiGateway
             Path: /containers
             Method: GET
             Auth:
@@ -52,7 +57,6 @@ Resources:
         GetContainerById:
           Type: Api
           Properties:
-            RestApiId: !Ref ApiGateway
             Path: /containers/{id}
             Method: GET
             Auth:
@@ -75,7 +79,6 @@ Resources:
         LoginUser:
           Type: Api
           Properties:
-            RestApiId: !Ref ApiGateway
             Path: /login
             Method: POST
 
@@ -89,18 +92,6 @@ Resources:
         Variables:
           AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
 
-  ApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: !Ref StageName
-      Auth:
-        Authorizers:
-          LambdaTokenAuthorizer:
-            FunctionArn: !GetAtt AuthorizerFunction.Arn
-            FunctionPayloadType: TOKEN
-            Identity:
-              Headers:
-                - Authorization
   
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
@@ -187,4 +178,4 @@ Resources:
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Stage/"
