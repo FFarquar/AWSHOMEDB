@@ -31,28 +31,28 @@ Resources:
 
   # Container item lambdas 
   ContainersListFunction:
-  Type: AWS::Serverless::Function
-  Properties:
-    CodeUri: .
-    Handler: src/handlers/containers/containers-list.handler
-    Runtime: nodejs24.x
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/containers/containers-list.handler
+      Runtime: nodejs24.x
 
-    Environment:
-      Variables:
-        TABLE_NAME: !Ref AWSHomeDBTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable
 
-    Policies:
-      - DynamoDBReadPolicy:
-          TableName: !Ref AWSHomeDBTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
 
-    Events:
-      GetContainers:
-        Type: Api
-        Properties:
-          Path: /containers
-          Method: GET
-          Auth:
-            Authorizer: LambdaTokenAuthorizer
+      Events:
+        GetContainers:
+          Type: Api
+          Properties:
+            Path: /containers
+            Method: GET
+            Auth:
+              Authorizer: LambdaTokenAuthorizer
 
   ContainerGetFunction:
     Type: AWS::Serverless::Function
