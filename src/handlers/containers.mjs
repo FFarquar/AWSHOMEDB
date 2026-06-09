@@ -98,13 +98,11 @@ async function createContainer(event) {
   }
 
   const item = {
-    PK: `CONTAINER#${body.id}`,
+    PK: `CONTAINER#${body.containerID}`,
     SK: "METADATA",
     entityType: "CONTAINER",
 
     containerID: body.containerID,
-    description: body.description ?? "",
-    location: body.location ?? "",
     extendedWarrantyFinishDate: body.extendedWarrantyFinishDate ?? "",
     purchaseDate: body.purchaseDate ?? "",
     purchasePrice: body.purchasePrice ?? "",
