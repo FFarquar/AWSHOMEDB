@@ -62,6 +62,14 @@ Resources:
             Auth:
               Authorizer: LambdaTokenAuthorizer
 
+        PostContainer:
+          Type: Api
+          Properties:
+            Path: /containers
+            Method: POST
+            Auth:
+              Authorizer: LambdaTokenAuthorizer
+
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
