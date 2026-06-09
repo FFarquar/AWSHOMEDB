@@ -85,7 +85,7 @@ export const handler = async (event) => {
 };
 
 async function createContainer(event) {
-s
+
   const body = JSON.parse(event.body);
 
   if (!body.id || !body.containerName) {
