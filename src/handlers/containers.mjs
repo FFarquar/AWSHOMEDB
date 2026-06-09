@@ -85,14 +85,14 @@ export const handler = async (event) => {
 };
 
 async function createContainer(event) {
-
+s
   const body = JSON.parse(event.body);
 
   if (!body.id || !body.containerName) {
     return {
       statusCode: 400,
       body: JSON.stringify({
-        message: "id and containerName are required",
+        message: "Missing details needed",
       }),
     };
   }
@@ -102,10 +102,16 @@ async function createContainer(event) {
     SK: "METADATA",
     entityType: "CONTAINER",
 
-    id: body.id,
-    containerName: body.containerName,
+    containerID: body.containerID,
     description: body.description ?? "",
     location: body.location ?? "",
+    extendedWarrantyFinishDate: body.extendedWarrantyFinishDate ?? "",
+    purchaseDate: body.purchaseDate ?? "",
+    purchasePrice: body.purchasePrice ?? "",
+    warrantyFinishDate: body.warrantyFinishDate ?? "",
+    photoLocation: body.photoLocation ?? "",
+    name: body.name,
+
 
     createdDate: new Date().toISOString(),
   };
