@@ -30,11 +30,35 @@ Resources:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
   # Container item lambdas 
-  ContainersFunction:
+  ContainersListFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: .
+    Handler: src/handlers/containers/containers-list.handler
+    Runtime: nodejs24.x
+
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref AWSHomeDBTable
+
+    Policies:
+      - DynamoDBReadPolicy:
+          TableName: !Ref AWSHomeDBTable
+
+    Events:
+      GetContainers:
+        Type: Api
+        Properties:
+          Path: /containers
+          Method: GET
+          Auth:
+            Authorizer: LambdaTokenAuthorizer
+
+  ContainerGetFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: src/handlers/containers.handler
+      Handler: src/handlers/containers/containers-get.handler
       Runtime: nodejs24.x
 
       Environment:
@@ -46,14 +70,6 @@ Resources:
             TableName: !Ref AWSHomeDBTable
 
       Events:
-        GetContainers:
-          Type: Api
-          Properties:
-            Path: /containers
-            Method: GET
-            Auth:
-              Authorizer: LambdaTokenAuthorizer
-
         GetContainerById:
           Type: Api
           Properties:
@@ -62,6 +78,22 @@ Resources:
             Auth:
               Authorizer: LambdaTokenAuthorizer
 
+  ContainerCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/containers/containers-create.handler
+      Runtime: nodejs24.x
+
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable
+
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+
+      Events:
         PostContainer:
           Type: Api
           Properties:
@@ -69,7 +101,7 @@ Resources:
             Method: POST
             Auth:
               Authorizer: LambdaTokenAuthorizer
-
+            
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:

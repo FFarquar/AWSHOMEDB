@@ -22,7 +22,8 @@ const items = [
     "warrantyFinishDate": "2018-01-15",
     "extendedWarrantyFinishDate": "2030-01-15",
 
-    "purchasePrice": 600000
+    "purchasePrice": 600000,
+    "createdDate": "2026-06-10"
     
   },
   {
@@ -40,7 +41,8 @@ const items = [
     "warrantyFinishDate": "2017-09-20",
     "extendedWarrantyFinishDate": null,
 
-    "purchasePrice": 85000
+    "purchasePrice": 85000,
+    "createdDate": "2026-06-10"
   },
   {
     "PK": "CONTAINER#CONTAINER3",
@@ -57,7 +59,8 @@ const items = [
     "warrantyFinishDate": "2021-09-20",
     "extendedWarrantyFinishDate": null,
 
-    "purchasePrice": 25000
+    "purchasePrice": 25000,
+    "createdDate": "2026-06-10"
   } 
 ];
 

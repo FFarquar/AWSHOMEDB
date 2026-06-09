@@ -43,6 +43,10 @@ function verifyToken(token) {
 }
 
 export const handler = async (event) => {
+
+  console.log("===== AUTHORIZER INVOKED =====");
+  console.log(JSON.stringify(event, null, 2));
+  
   try {
     const token = event.authorizationToken || '';
     const bearerToken = token.startsWith('Bearer ') ? token.slice(7) : token;
