@@ -38,20 +38,22 @@ Resources:
         GetContainers:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGateway
             Path: /containers
             Method: GET
             Auth:
-              Authorizer: AuthorizerFunction            
+              Authorizer: LambdaTokenAuthorizer
 
         GetContainerById:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGateway
             Path: /containers/{id}
             Method: GET
             Auth:
-              Authorizer: AuthorizerFunction
+              Authorizer: LambdaTokenAuthorizer
 
-  LoginFunctsion:
+  LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
@@ -68,6 +70,7 @@ Resources:
         LoginUser:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGateway
             Path: /login
             Method: POST
 
@@ -80,6 +83,19 @@ Resources:
       Environment:
         Variables:
           AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Stage
+      Auth:
+        Authorizers:
+          LambdaTokenAuthorizer:
+            FunctionArn: !GetAtt AuthorizerFunction.Arn
+            FunctionPayloadType: TOKEN
+            Identity:
+              Headers:
+                - Authorization
   
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
