@@ -1,34 +1,27 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   AWSHOMEDB
 
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
 Transform:
 - AWS::Serverless-2016-10-31
 
-Globals:
-  Api:
-    Auth:
-      Authorizers:
-        LambdaTokenAuthorizer:
-          FunctionArn: !GetAtt AuthorizerFunction.Arn
-          FunctionPayloadType: TOKEN
-          Identity:
-            Headers:
-              - Authorization
-          AuthorizerResultTtlInSeconds: 0
-
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  # 🚀 Centralized Explicit API Definition
+  # Ensures accurate route propagation and structural path hierarchies in AWS.
+  MyServerlessApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Stage
+      Auth:
+        DefaultAuthorizer: LambdaTokenAuthorizer
+        Authorizers:
+          LambdaTokenAuthorizer:
+            FunctionArn: !GetAtt AuthorizerFunction.Arn
+            FunctionPayloadType: TOKEN
+            Identity:
+              Headers:
+                - Authorization
+            AuthorizerResultTtlInSeconds: 0
 
   # Container item lambdas 
   ContainersListFunction:
@@ -37,23 +30,19 @@ Resources:
       CodeUri: .
       Handler: src/handlers/containers/containers-list.handler
       Runtime: nodejs24.x
-
       Environment:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
-
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AWSHomeDBTable
-
       Events:
         GetContainers:
           Type: Api
           Properties:
+            RestApiId: !Ref MyServerlessApi
             Path: /containers
             Method: GET
-            Auth:
-              Authorizer: LambdaTokenAuthorizer
 
   ContainerGetFunction:
     Type: AWS::Serverless::Function
@@ -61,23 +50,19 @@ Resources:
       CodeUri: .
       Handler: src/handlers/containers/containers-get.handler
       Runtime: nodejs24.x
-
       Environment:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
-
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AWSHomeDBTable
-
       Events:
         GetContainerById:
           Type: Api
           Properties:
+            RestApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: GET
-            Auth:
-              Authorizer: LambdaTokenAuthorizer
 
   ContainerCreateFunction:
     Type: AWS::Serverless::Function
@@ -85,23 +70,19 @@ Resources:
       CodeUri: .
       Handler: src/handlers/containers/containers-create.handler
       Runtime: nodejs24.x
-
       Environment:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
-
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref AWSHomeDBTable
-
       Events:
         PostContainer:
           Type: Api
           Properties:
+            RestApiId: !Ref MyServerlessApi
             Path: /containers
             Method: POST
-            Auth:
-              Authorizer: LambdaTokenAuthorizer
             
   LoginFunction:
     Type: AWS::Serverless::Function
@@ -120,8 +101,11 @@ Resources:
         LoginUser:
           Type: Api
           Properties:
+            RestApiId: !Ref MyServerlessApi
             Path: /login
             Method: POST
+            Auth:
+              Authorizer: NONE # Overrides default API authorizer for the login route
 
   AuthorizerFunction:
     Type: AWS::Serverless::Function
@@ -133,48 +117,32 @@ Resources:
         Variables:
           AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
 
-  
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
-
-
-  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
+  # DynamoDB table to store item: {id: <ID>, name: <NAME>}
   AWSHomeDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Sub "${AWS::StackName}-Data"
-
       BillingMode: PAY_PER_REQUEST
-
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
-
         - AttributeName: SK
           AttributeType: S
-
         - AttributeName: category
           AttributeType: S
-
         - AttributeName: purchasedFrom
           AttributeType: S
-
         - AttributeName: itemName
           AttributeType: S
-
         - AttributeName: warrantyExpiryDate
           AttributeType: S
-
         - AttributeName: entityType
           AttributeType: S
-
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
-
         - AttributeName: SK
           KeyType: RANGE
-
       GlobalSecondaryIndexes:
         - IndexName: CategoryIndex
           KeySchema:
@@ -182,21 +150,18 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-
         - IndexName: PurchasedFromIndex
           KeySchema:
             - AttributeName: purchasedFrom
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-
         - IndexName: ItemNameIndex
           KeySchema:
             - AttributeName: itemName
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-
         - IndexName: WarrantyIndex
           KeySchema:
             - AttributeName: entityType
@@ -205,13 +170,10 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
-
       SSESpecification:
         SSEEnabled: true
-
       Tags:
         - Key: Application
           Value: AWSHomeDB
@@ -219,4 +181,4 @@ Resources:
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Stage/"
+    Value: !Sub "https://${MyServerlessApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Stage/"
