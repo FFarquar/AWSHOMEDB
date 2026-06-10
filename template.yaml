@@ -89,7 +89,28 @@ Resources:
             RestApiId: !Ref MyServerlessApi
             Path: /containers
             Method: POST
-            
+
+  ContainerDeleteFunction:
+      Type: AWS::Serverless::Function
+      Properties:
+        CodeUri: .
+        Handler: src/handlers/containers/containers-delete.handler
+        Runtime: nodejs24.x
+        Environment:
+          Variables:
+            TABLE_NAME: !Ref AWSHomeDBTable
+        Policies:
+          # 🚀 Grants permission to perform write/delete execution rules on this table
+          - DynamoDBCrudPolicy:
+              TableName: !Ref AWSHomeDBTable
+        Events:
+          DeleteContainerById:
+            Type: Api
+            Properties:
+              RestApiId: !Ref MyServerlessApi
+              Path: /containers/{id}
+              Method: DELETE            
+              
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
