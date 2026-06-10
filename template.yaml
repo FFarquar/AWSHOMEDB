@@ -22,7 +22,8 @@ Resources:
       Cors:
         AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-        AllowOrigin: "'https://github.io'"
+        #AllowOrigin: "'https://github.io'"
+        AllowOrigin: "'https://ffarquar.github.io'"
         MaxAge: "'600'"
         
       Auth:
