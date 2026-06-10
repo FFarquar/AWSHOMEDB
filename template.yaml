@@ -7,10 +7,11 @@ Transform:
 
 Resources:
   # 🚀 Fixed Explicit API Definition
-  # Removed the hardcoded StageName parameter to resolve CloudFormation naming collisions.
+  # StageName is required by SAM, changed to 'Prod' to bypass your CloudFormation collision.
   MyServerlessApi:
     Type: AWS::Serverless::Api
     Properties:
+      StageName: Prod
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
