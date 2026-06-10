@@ -37,40 +37,44 @@ jobs:
       
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 FIX 1: Robust URL extraction using a refined query filter & safety block
+      # 🚀 Self-Discovering Staging URL Extraction & Configuration Builder
       - name: Generate Frontend Configuration
         run: |
+          echo "🔎 Scanning CloudFormation to find the matching Staging endpoint..."
+          
+          # Searches active stacks for a 'WebEndpoint' key matching 'STAGING' or 'staging'
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name AWSHOMEDB-STAGING \
             --region ap-southeast-2 \
-            --query "Stacks[?StackName=='AWSHOMEDB-STAGING'].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --query "Stacks[?contains(StackName, 'STAGING') || contains(StackName, 'staging')].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
           
-          # Safety check: Force pipeline crash if AWS outputs "None" or blank
+          # Circuit Breaker: Crash the pipeline cleanly if the URL cannot be resolved
           if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Failed to extract WebEndpoint from AWS CloudFormation stack AWSHOMEDB-STAGING!"
-            echo "Please check if your template.yaml has Outputs -> WebEndpoint properly deployed."
+            echo "❌ CRITICAL ERROR: Could not locate a CloudFormation stack containing 'STAGING' with an output named 'WebEndpoint'."
+            echo "💡 Troubleshooting Step: Check your AWS Console to verify your stack outputs are deployed completely."
             exit 1
           fi
           
-          API_URL_CLEAN=${API_URL%/}
+          # Clean whitespace and trailing slashes completely out of the text string
+          API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
+          
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Generated config.js with Staging URL: $API_URL_CLEAN"
+          echo "✅ Successfully written configuration payload to frontend/config.js: $API_URL_CLEAN"
 
       # 📦 Stage environment setup
       - name: Prepare Staging Subdirectory
         run: |
           mkdir -p staging
           cp -r frontend/* staging/
-          echo "✅ Copied all frontend folder files to staging/"
+          echo "✅ Copied all frontend folder files and artifacts to staging/"
 
-      # 📤 Upload Staging code
+      # 📤 Upload Staging code to GitHub Pages infrastructure
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.' 
 
-      # 🌐 Publish Live
+      # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
@@ -96,30 +100,34 @@ jobs:
       
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 FIX 2: Production URL extraction using a refined query filter & safety block
+      # 🚀 Self-Discovering Production URL Extraction & Configuration Builder
       - name: Generate Frontend Configuration
         run: |
+          echo "🔎 Scanning CloudFormation to find the matching Production endpoint..."
+          
+          # Searches active stacks for a 'WebEndpoint' key matching 'PROD' or 'prod'
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name AWSHOMEDB-PROD \
             --region ap-southeast-2 \
-            --query "Stacks[?StackName=='AWSHOMEDB-PROD'].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --query "Stacks[?contains(StackName, 'PROD') || contains(StackName, 'prod')].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
           
           if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Failed to extract WebEndpoint from AWS CloudFormation stack AWSHOMEDB-PROD!"
+            echo "❌ CRITICAL ERROR: Could not locate a CloudFormation stack containing 'PROD' with an output named 'WebEndpoint'."
             exit 1
           fi
           
-          API_URL_CLEAN=${API_URL%/}
+          # Clean whitespace and trailing slashes completely out of the text string
+          API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
+          
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"
+          echo "✅ Successfully written configuration payload to frontend/config.js: $API_URL_CLEAN"
 
-      # 📤 Upload Production code
+      # 📤 Upload Production code to GitHub Pages infrastructure (Isolated root build directory)
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './frontend' 
 
-      # 🌐 Publish Live
+      # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
