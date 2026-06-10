@@ -110,7 +110,28 @@ Resources:
               RestApiId: !Ref MyServerlessApi
               Path: /containers/{id}
               Method: DELETE            
-              
+
+  ContainerUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/containers/containers-update.handler
+      Runtime: nodejs24.x
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable
+      Policies:
+        # Grants write/update execution rule bounds on this table instance
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        UpdateContainerById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyServerlessApi
+            Path: /containers/{id}
+            Method: PUT # 🚀 You can use PUT or PATCH here
+
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
