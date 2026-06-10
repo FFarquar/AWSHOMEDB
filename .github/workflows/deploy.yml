@@ -10,7 +10,6 @@ on:
 permissions:
   id-token: write
   contents: read
-  # 🔑 Required for GitHub Pages
   pages: write
   deployments: write
 
@@ -35,29 +34,28 @@ jobs:
         run: npm install
 
       - run: sam build
-      
-      # 🛠️ RESTORED: Your original working SAM deploy command
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 Dynamic config generation
+      # 🚀 1. Put the dynamic config directly into your frontend directory
       - name: Generate Frontend Configuration
         run: |
-          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-STAGING --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-STAGING --query "Stacks.Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
           API_URL_CLEAN=${API_URL%/}
-          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
-          echo "✅ Generated config.js with Staging URL: $API_URL_CLEAN"
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
+          echo "✅ Generated config.js inside frontend folder"
 
-      # 📦 Stage environment: Prepare a staging subdirectory so it doesn't overwrite production
+      # 📦 2. Automatically copies EVERYTHING from the frontend folder into a staging subdirectory
       - name: Prepare Staging Subdirectory
         run: |
           mkdir -p staging
-          cp index.html config.js staging/
+          cp -r frontend/* staging/
+          echo "✅ Copied all frontend files and artifacts to staging folder"
 
-      # 📤 Upload Staging code to GitHub Pages infrastructure
+      # 📤 Upload everything to GitHub Pages infrastructure
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' 
+          path: '.' # Leaves staging inside /staging and production paths out of the root
 
       # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
@@ -82,23 +80,21 @@ jobs:
         run: npm install
 
       - run: sam build
-      
-      # 🛠️ RESTORED: Your original working SAM deploy command
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 Dynamic config generation
+      # 🚀 1. Put the dynamic config directly into your frontend directory
       - name: Generate Frontend Configuration
         run: |
-          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-PROD --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-PROD --query "Stacks.Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
           API_URL_CLEAN=${API_URL%/}
-          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
-          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
+          echo "✅ Generated config.js inside frontend folder"
 
-      # 📤 Upload Production code to GitHub Pages infrastructure
+      # 📤 2. For production, upload ONLY the contents of the frontend directory to keep the root clean
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' 
+          path: './frontend' 
 
       # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
