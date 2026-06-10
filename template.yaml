@@ -159,12 +159,15 @@ Resources:
           AttributeType: S
 
         - AttributeName: itemName
-          AttributeType: S
+          AttributeType: Ss
 
         - AttributeName: warrantyExpiryDate
           AttributeType: S
 
         - AttributeName: entityType
+          AttributeType: S
+
+        - AttributeName: createdDate
           AttributeType: S
 
       KeySchema:
