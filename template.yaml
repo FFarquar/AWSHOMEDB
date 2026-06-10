@@ -17,13 +17,18 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref StageName
+      
+      # 🚀 FIXED: Wrapped explicitly in single-and-double quotes to stop SAM truncation blocks
       Cors:
         AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
         AllowOrigin: "'https://github.io'"
         MaxAge: "'600'"
+        
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
+        # 🚀 FIXED: Tells API Gateway to never run the Token Authorizer during browser preflight requests
+        AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
@@ -156,7 +161,6 @@ Resources:
             Method: POST
             Auth:
               Authorizer: NONE
-        # 🚀 FIXED: Added explicit, open OPTIONS method handler to bypass global default token authorizer blocks
         LoginPreflight:
           Type: Api
           Properties:

@@ -1,93 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AWS Home DB - Login</title>
-    <link rel="icon" href="data:,">
-    <script src="./config.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }
-        h2 { margin-top: 0; color: #232f3e; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; font-size: 14px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
-        button { width: 100%; padding: 10px; background-color: #ff9900; border: none; border-radius: 4px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #e68a00; }
-        .error { color: #d9534f; font-size: 14px; text-align: center; margin-top: 10px; display: none; white-space: pre-line; word-break: break-word; }
-    </style>
-</head>
-<body>
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 
-<div class="login-card">
-    <h2>Container DB Login</h2>
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="username">Username (LoginID)</label>
-            <input type="text" id="username" required placeholder="Enter username">
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" required placeholder="Enter password">
-        </div>
-        <button type="submit">Sign In</button>
-    </form>
-    <div id="errorMessage" class="error"></div>
-</div>
+const client = new DynamoDBClient({});
+const ddb = DynamoDBDocumentClient.from(client);
 
-<script>
-    const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || '';
+const TABLE_NAME = process.env.TABLE_NAME;
+const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const errorDiv = document.getElementById('errorMessage');
-        
-        errorDiv.style.display = 'none';
+// Centralized CORS configuration parameters mapping
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://github.io',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
+  'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
+};
 
-        if (!API_BASE_URL) {
-            errorDiv.textContent = "❌ Configuration Error:\nUnable to locate active AWS endpoint base configurations.";
-            errorDiv.style.display = 'block';
-            return;
-        }
+function base64UrlEncode(value) {
+  return Buffer.from(value)
+    .toString('base64')
+    .replace(/=+$/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ loginID: username, password: password })
-            });
+function safeEqual(a, b) {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
 
-            // Handle network states that aren't 200 JSON packages safely
-            let data = {};
-            try {
-                data = await response.json();
-            } catch (jsonErr) {
-                data = { message: "Server returned an unreadable response format." };
-            }
+  if (aBuffer.length !== bBuffer.length) {
+    return false;
+  }
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Invalid username or password credentials.');
-            }
+  return crypto.timingSafeEqual(aBuffer, bBuffer);
+}
 
-            // Save token under multiple keys to match future dashboard page scripting hooks
-            localStorage.setItem('authToken', data.accessToken || data.token);
-            localStorage.setItem('token', data.accessToken || data.token);
-            
-            window.location.href = 'containers.html';
+async function verifyPassword(candidatePassword, storedPassword) {
+  if (!storedPassword) {
+    return false;
+  }
 
-        } catch (err) {
-            // 🚀 FIXED: UI will now gracefully catch browser-blocked preflight CORS drops or execution failures
-            console.error("Login sequence interception context:", err);
-            errorDiv.textContent = err.message === "Failed to fetch" 
-                ? "❌ Network Connection Blocked:\nUnable to communicate with AWS services. This is likely an unauthenticated CORS or API Gateway preflight error."
-                : `❌ Login Blocked:\n${err.message}`;
-            errorDiv.style.display = 'block';
-        }
+  if (storedPassword.startsWith('$2')) {
+    return bcrypt.compare(candidatePassword, storedPassword);
+  }
+
+  if (storedPassword.startsWith('sha256:')) {
+    const hash = crypto.createHash('sha256').update(candidatePassword).digest('hex');
+    return safeEqual(storedPassword.slice('sha256:'.length), hash);
+  }
+
+  return safeEqual(storedPassword, candidatePassword);
+}
+
+function signToken(payload) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signingInput = `${encodedHeader}.${encodedPayload}`;
+  const signature = crypto
+    .createHmac('sha256', AUTH_SECRET)
+    .update(signingInput)
+    .digest('base64')
+    .replace(/=+$/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+
+  return `${signingInput}.${signature}`;
+}
+
+export const handler = async (event) => {
+  try {
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ message: 'Success' }),
+      };
+    }
+
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ message: 'Only POST is supported' }),
+      };
+    }
+
+    const rawBody = typeof event.body === 'string'
+      ? event.body
+      : JSON.stringify(event.body || {});
+
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const loginID = body.loginID;
+    const password = body.password;
+
+    if (!loginID || !password) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ message: 'loginID and password are required' }),
+      };
+    }
+
+    const result = await ddb.send(new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'PK = :pk AND SK = :sk',
+      ExpressionAttributeValues: {
+        ':pk': `USER#${loginID}`,
+        ':sk': 'PROFILE',
+      },
+    }));
+
+    // 🚀 FIXED: Restored indexing logic to extract user element properly from array results
+    const user = result.Items?.[0];
+
+    if (!user || user.active !== true) {
+      return {
+        statusCode: 401,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ message: 'Invalid login credentials' }),
+      };
+    }
+
+    const passwordHash = user.passwordHash || user.password || '';
+    const authenticated = await verifyPassword(password, passwordHash);
+
+    if (!authenticated) {
+      return {
+        statusCode: 401,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ message: 'Invalid login credentials' }),
+      };
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const token = signToken({
+      sub: user.PK,
+      loginID: user.loginID,
+      role: user.role || 'USER',
+      iat: now,
+      exp: now + 3600,
     });
-</script>
 
-</body>
-</html>
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        accessToken: token,
+        token: token,
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        role: user.role || 'USER',
+      }),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ message: 'Login failed', error: error.message }),
+    };
+  }
+};
