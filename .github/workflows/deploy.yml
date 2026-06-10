@@ -34,6 +34,19 @@ jobs:
       - run: sam build
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
+  # 🚀 ADD THIS NEW STEP: Dynamically builds the config file for Staging
+      - name: Generate Frontend Configuration
+        run: |
+          # Extract the WebEndpoint URL out of the AWS CloudFormation Stack Output metadata keys
+          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-STAGING --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          
+          # Clean any trailing slashes to keep endpoints consistent
+          API_URL_CLEAN=${API_URL%/}
+          
+          # Write the environment object parameter straight into config.js
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
+          echo "✅ Generated config.js with Staging URL: $API_URL_CLEAN"
+
   deploy-production:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -54,3 +67,12 @@ jobs:
 
       - run: sam build
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
+ # 🚀 ADD THIS NEW STEP: Dynamically builds the config file for Production
+      - name: Generate Frontend Configuration
+        run: |
+          # Extract the WebEndpoint from the Production Stack Name
+          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-PROD --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          API_URL_CLEAN=${API_URL%/}
+          
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
+          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"      
