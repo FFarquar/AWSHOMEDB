@@ -42,7 +42,7 @@ const items = [
     "extendedWarrantyFinishDate": null,
 
     "purchasePrice": 85000,
-    "createdDate": "2026-06-10"
+    "createdDate": "2026-06-12"
   },
   {
     "PK": "CONTAINER#CONTAINER3",
