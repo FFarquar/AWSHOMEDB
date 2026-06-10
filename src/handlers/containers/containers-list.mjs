@@ -27,6 +27,10 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store, max-age=0" // 🚀 Instructs Postman/CloudFront to drop cache
+      },      
       body: JSON.stringify(result.Items || []),
     };
 
