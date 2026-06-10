@@ -34,30 +34,43 @@ jobs:
         run: npm install
 
       - run: sam build
+      
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 1. Put the dynamic config directly into your frontend directory
+      # 🚀 FIX 1: Robust URL extraction using a refined query filter & safety block
       - name: Generate Frontend Configuration
         run: |
-          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-STAGING --query "Stacks.Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name AWSHOMEDB-STAGING \
+            --region ap-southeast-2 \
+            --query "Stacks[?StackName=='AWSHOMEDB-STAGING'].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --output text)
+          
+          # Safety check: Force pipeline crash if AWS outputs "None" or blank
+          if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
+            echo "❌ CRITICAL ERROR: Failed to extract WebEndpoint from AWS CloudFormation stack AWSHOMEDB-STAGING!"
+            echo "Please check if your template.yaml has Outputs -> WebEndpoint properly deployed."
+            exit 1
+          fi
+          
           API_URL_CLEAN=${API_URL%/}
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Generated config.js inside frontend folder"
+          echo "✅ Generated config.js with Staging URL: $API_URL_CLEAN"
 
-      # 📦 2. Automatically copies EVERYTHING from the frontend folder into a staging subdirectory
+      # 📦 Stage environment setup
       - name: Prepare Staging Subdirectory
         run: |
           mkdir -p staging
           cp -r frontend/* staging/
-          echo "✅ Copied all frontend files and artifacts to staging folder"
+          echo "✅ Copied all frontend folder files to staging/"
 
-      # 📤 Upload everything to GitHub Pages infrastructure
+      # 📤 Upload Staging code
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Leaves staging inside /staging and production paths out of the root
+          path: '.' 
 
-      # 🌐 Publish Live to GitHub Pages
+      # 🌐 Publish Live
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
@@ -80,22 +93,33 @@ jobs:
         run: npm install
 
       - run: sam build
+      
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 1. Put the dynamic config directly into your frontend directory
+      # 🚀 FIX 2: Production URL extraction using a refined query filter & safety block
       - name: Generate Frontend Configuration
         run: |
-          API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-PROD --query "Stacks.Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name AWSHOMEDB-PROD \
+            --region ap-southeast-2 \
+            --query "Stacks[?StackName=='AWSHOMEDB-PROD'].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --output text)
+          
+          if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
+            echo "❌ CRITICAL ERROR: Failed to extract WebEndpoint from AWS CloudFormation stack AWSHOMEDB-PROD!"
+            exit 1
+          fi
+          
           API_URL_CLEAN=${API_URL%/}
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Generated config.js inside frontend folder"
+          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"
 
-      # 📤 2. For production, upload ONLY the contents of the frontend directory to keep the root clean
+      # 📤 Upload Production code
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './frontend' 
 
-      # 🌐 Publish Live to GitHub Pages
+      # 🌐 Publish Live
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
