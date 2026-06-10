@@ -77,7 +77,7 @@ export const handler = async (event) => {
       };
     }
 
-    sconsole.log("AUTHORIZATION SUCCEEDED");
+    console.log("AUTHORIZATION SUCCEEDED");
     console.log("principalId:", payload.loginID || payload.sub);
     console.log("methodArn:", event.methodArn);
 
