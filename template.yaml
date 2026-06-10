@@ -167,9 +167,6 @@ Resources:
         - AttributeName: entityType
           AttributeType: S
 
-        - AttributeName: createdDate
-          AttributeType: S
-
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
