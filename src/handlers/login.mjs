@@ -9,7 +9,7 @@ const ddb = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME;
 const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
 
-// Centralized CORS headers configuration object mapping
+// Centralized CORS configuration parameters mapping
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': 'https://github.io',
   'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
@@ -70,7 +70,6 @@ function signToken(payload) {
 
 export const handler = async (event) => {
   try {
-    // 🚀 FIXED: Directly intercept mock OPTIONS traffic to ensure the handshake closes successfully
     if (event.httpMethod === 'OPTIONS') {
       return {
         statusCode: 200,
@@ -112,7 +111,7 @@ export const handler = async (event) => {
       },
     }));
 
-    // 🚀 FIXED: Repaired array index notation mapping error
+    // 🚀 FIXED: Restored indexing logic to extract user element properly from array results
     const user = result.Items?.[0];
 
     if (!user || user.active !== true) {
