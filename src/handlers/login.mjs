@@ -9,12 +9,15 @@ const ddb = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME;
 const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
 
-// Centralized CORS configuration parameters mapping
+// 🚀 ENFORCE THE CORRECT ORIGIN HERE
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': 'https://github.io',
+  'Access-Control-Allow-Origin': 'https://ffarquar.github.io',
   'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
   'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
 };
+
+// 💡 CACHE BUSTER COMMENT: Force AWS SAM to update infrastructure configs
+// Updated: 2026-06-10-ForceRefresh-001
 
 function base64UrlEncode(value) {
   return Buffer.from(value)
@@ -27,28 +30,17 @@ function base64UrlEncode(value) {
 function safeEqual(a, b) {
   const aBuffer = Buffer.from(a);
   const bBuffer = Buffer.from(b);
-
-  if (aBuffer.length !== bBuffer.length) {
-    return false;
-  }
-
+  if (aBuffer.length !== bBuffer.length) return false;
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
 async function verifyPassword(candidatePassword, storedPassword) {
-  if (!storedPassword) {
-    return false;
-  }
-
-  if (storedPassword.startsWith('$2')) {
-    return bcrypt.compare(candidatePassword, storedPassword);
-  }
-
+  if (!storedPassword) return false;
+  if (storedPassword.startsWith('$2')) return bcrypt.compare(candidatePassword, storedPassword);
   if (storedPassword.startsWith('sha256:')) {
     const hash = crypto.createHash('sha256').update(candidatePassword).digest('hex');
     return safeEqual(storedPassword.slice('sha256:'.length), hash);
   }
-
   return safeEqual(storedPassword, candidatePassword);
 }
 
@@ -64,7 +56,6 @@ function signToken(payload) {
     .replace(/=+$/g, '')
     .replace(/\+/g, '-')
     .replace(/\//g, '_');
-
   return `${signingInput}.${signature}`;
 }
 
@@ -86,10 +77,7 @@ export const handler = async (event) => {
       };
     }
 
-    const rawBody = typeof event.body === 'string'
-      ? event.body
-      : JSON.stringify(event.body || {});
-
+    const rawBody = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
     const body = rawBody ? JSON.parse(rawBody) : {};
     const loginID = body.loginID;
     const password = body.password;
@@ -111,7 +99,6 @@ export const handler = async (event) => {
       },
     }));
 
-    // 🚀 FIXED: Restored indexing logic to extract user element properly from array results
     const user = result.Items?.[0];
 
     if (!user || user.active !== true) {
