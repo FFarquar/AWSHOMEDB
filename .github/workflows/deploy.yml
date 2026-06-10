@@ -10,6 +10,9 @@ on:
 permissions:
   id-token: write
   contents: read
+  # 🔑 Required for GitHub Pages
+  pages: write
+  deployments: write
 
 jobs:
 
@@ -32,20 +35,33 @@ jobs:
         run: npm install
 
       - run: sam build
+      
+      # 🛠️ RESTORED: Your original working SAM deploy command
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-  # 🚀 ADD THIS NEW STEP: Dynamically builds the config file for Staging
+      # 🚀 Dynamic config generation
       - name: Generate Frontend Configuration
         run: |
-          # Extract the WebEndpoint URL out of the AWS CloudFormation Stack Output metadata keys
           API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-STAGING --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
-          
-          # Clean any trailing slashes to keep endpoints consistent
           API_URL_CLEAN=${API_URL%/}
-          
-          # Write the environment object parameter straight into config.js
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
           echo "✅ Generated config.js with Staging URL: $API_URL_CLEAN"
+
+      # 📦 Stage environment: Prepare a staging subdirectory so it doesn't overwrite production
+      - name: Prepare Staging Subdirectory
+        run: |
+          mkdir -p staging
+          cp index.html config.js staging/
+
+      # 📤 Upload Staging code to GitHub Pages infrastructure
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' 
+
+      # 🌐 Publish Live to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -66,13 +82,24 @@ jobs:
         run: npm install
 
       - run: sam build
+      
+      # 🛠️ RESTORED: Your original working SAM deploy command
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
- # 🚀 ADD THIS NEW STEP: Dynamically builds the config file for Production
+
+      # 🚀 Dynamic config generation
       - name: Generate Frontend Configuration
         run: |
-          # Extract the WebEndpoint from the Production Stack Name
           API_URL=$(aws cloudformation describe-stacks --stack-name AWSHOMEDB-PROD --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" --output text)
           API_URL_CLEAN=${API_URL%/}
-          
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > config.js
-          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"      
+          echo "✅ Generated config.js with Production URL: $API_URL_CLEAN"
+
+      # 📤 Upload Production code to GitHub Pages infrastructure
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' 
+
+      # 🌐 Publish Live to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

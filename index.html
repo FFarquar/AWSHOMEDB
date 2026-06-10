@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="config.js"></script>
+    <script>
+      // Example fetch calling your AWS SAM API Gateway
+      fetch(`${window.APP_CONFIG.API_BASE_URL}/your-endpoint`)
+        .then(res => res.json())
+        .then(data => console.log(data));
+    </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Customer Form</title>
