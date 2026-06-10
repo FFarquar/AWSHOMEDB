@@ -32,7 +32,7 @@ jobs:
         run: npm install
 
       - run: sam build
-      - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload
+      - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -53,4 +53,4 @@ jobs:
         run: npm install
 
       - run: sam build
-      - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload
+      - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
