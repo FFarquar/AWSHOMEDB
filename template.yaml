@@ -17,7 +17,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref StageName
-      
+      Description: "AWSHomeDB API - forced redeploy 2026-06-11"
       # 🚀 FIXED: Wrapped explicitly in single-and-double quotes to stop SAM truncation blocks
       Cors:
         AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
