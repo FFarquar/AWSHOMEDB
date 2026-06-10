@@ -20,59 +20,81 @@ export const handler = async (event) => {
       };
     }
 
-    // Parse the payload body sent from Postman
     const body = JSON.parse(event.body || "{}");
-    const { itemName, category, purchasedFrom } = body;
+    
+    // 🚀 Extract your real payload fields (Excluding PK/SK since they shouldn't change)
+    const { 
+      name, 
+      photoLocation, 
+      purchaseDate, 
+      warrantyFinishDate, 
+      extendedWarrantyFinishDate, 
+      purchasePrice 
+    } = body;
 
-    // Check that at least one update attribute is provided
-    if (!itemName && !category && !purchasedFrom) {
+    // Check that at least one valid field was provided to update
+    if (!name && !photoLocation && !purchaseDate && !warrantyFinishDate && extendedWarrantyFinishDate === undefined && purchasePrice === undefined) {
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "No update fields provided. Supply at least itemName, category, or purchasedFrom." }),
+        body: JSON.stringify({ error: "No valid update fields provided in payload body." }),
       };
     }
 
-    // Dynamically build the Update Expression to update only what is provided
+    // Dynamically build the Update Expression
     let updateExpression = "SET";
     const expressionAttributeNames = {};
     const expressionAttributeValues = {};
 
-    if (itemName) {
-      updateExpression += " #itemName = :itemName,";
-      expressionAttributeNames["#itemName"] = "itemName";
-      expressionAttributeValues[":itemName"] = itemName;
+    if (name !== undefined) {
+      updateExpression += " #name = :name,";
+      expressionAttributeNames["#name"] = "name";
+      expressionAttributeValues[":name"] = name;
     }
-    if (category) {
-      updateExpression += " #category = :category,";
-      expressionAttributeNames["#category"] = "category";
-      expressionAttributeValues[":category"] = category;
+    if (photoLocation !== undefined) {
+      updateExpression += " #photoLocation = :photoLocation,";
+      expressionAttributeNames["#photoLocation"] = "photoLocation";
+      expressionAttributeValues[":photoLocation"] = photoLocation;
     }
-    if (purchasedFrom) {
-      updateExpression += " #purchasedFrom = :purchasedFrom,";
-      expressionAttributeNames["#purchasedFrom"] = "purchasedFrom";
-      expressionAttributeValues[":purchasedFrom"] = purchasedFrom;
+    if (purchaseDate !== undefined) {
+      updateExpression += " #purchaseDate = :purchaseDate,";
+      expressionAttributeNames["#purchaseDate"] = "purchaseDate";
+      expressionAttributeValues[":purchaseDate"] = purchaseDate;
+    }
+    if (warrantyFinishDate !== undefined) {
+      updateExpression += " #warrantyFinishDate = :warrantyFinishDate,";
+      expressionAttributeNames["#warrantyFinishDate"] = "warrantyFinishDate";
+      expressionAttributeValues[":warrantyFinishDate"] = warrantyFinishDate;
+    }
+    if (extendedWarrantyFinishDate !== undefined) {
+      updateExpression += " #extendedWarrantyFinishDate = :extendedWarrantyFinishDate,";
+      expressionAttributeNames["#extendedWarrantyFinishDate"] = "extendedWarrantyFinishDate";
+      expressionAttributeValues[":extendedWarrantyFinishDate"] = extendedWarrantyFinishDate;
+    }
+    if (purchasePrice !== undefined) {
+      updateExpression += " #purchasePrice = :purchasePrice,";
+      expressionAttributeNames["#purchasePrice"] = "purchasePrice";
+      expressionAttributeValues[":purchasePrice"] = purchasePrice;
     }
 
-    // Remove the trailing comma from the expression string
+    // Trim trailing comma
     updateExpression = updateExpression.slice(0, -1);
 
     const params = {
       TableName: TABLE_NAME,
       Key: {
         PK: `CONTAINER#${containerId}`,
-        SK: `CONTAINER#${containerId}` // Uses the same mirrored pattern that worked for your DELETE
+        SK: `CONTAINER#${containerId}`
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: "ALL_NEW" // 🚀 Forces DynamoDB to return the complete updated object
+      ReturnValues: "ALL_NEW" 
     };
 
-    console.log("Executing DynamoDB Update Command...");
+    console.log("Executing DynamoDB Update Command on:", params.Key);
     const response = await docClient.send(new UpdateCommand(params));
 
-    console.log("✅ UPDATE SUCCESSFUL");
     return {
       statusCode: 200,
       headers: { 
@@ -86,7 +108,7 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("💥 UPDATE EXCEPTION CAUGHT:", error);
+    console.error("💥 UPDATE EXCEPTION:", error);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
