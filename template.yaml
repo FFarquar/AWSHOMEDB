@@ -1,9 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  AWSHOMEDB
+Description: AWSHOMEDB
 
 Transform:
-- AWS::Serverless-2016-10-31
+  - AWS::Serverless-2016-10-31
 
 Parameters:
   StageName:
@@ -12,34 +11,44 @@ Parameters:
     Description: "The deployment stage name passed from your branch workflow"
 
 Resources:
-  # Centralized Explicit API Definition
+
+  # =========================
+  # HTTP API (REPLACES REST API)
+  # =========================
   MyServerlessApi:
-    Type: AWS::Serverless::Api
+    Type: AWS::Serverless::HttpApi
     Properties:
       StageName: !Ref StageName
-      Description: "AWSHomeDB API - forced redeploy 2026-06-11"
-      # 🚀 FIXED: Wrapped explicitly in single-and-double quotes to stop SAM truncation blocks
-      Cors:
-        AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-        #AllowOrigin: "'https://github.io'"
-        AllowOrigin: "'https://ffarquar.github.io'"
-        MaxAge: "'600'"
-        
+      Description: "AWSHomeDB HTTP API - migrated 2026-06-11"
+
+      CorsConfiguration:
+        AllowOrigins:
+          - https://ffarquar.github.io
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Amz-Date
+          - X-Api-Key
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
-        # 🚀 FIXED: Tells API Gateway to never run the Token Authorizer during browser preflight requests
-        AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
-            FunctionPayloadType: TOKEN
             Identity:
               Headers:
                 - Authorization
-            AuthorizerResultTtlInSeconds: 0
 
-  # Container item lambdas 
+  # =========================
+  # CONTAINERS LAMBDAS
+  # =========================
+
   ContainersListFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -54,9 +63,8 @@ Resources:
             TableName: !Ref AWSHomeDBTable
       Events:
         GetContainers:
-          Type: Api
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref MyServerlessApi
             Path: /containers
             Method: GET
 
@@ -74,9 +82,8 @@ Resources:
             TableName: !Ref AWSHomeDBTable
       Events:
         GetContainerById:
-          Type: Api
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: GET
 
@@ -94,31 +101,29 @@ Resources:
             TableName: !Ref AWSHomeDBTable
       Events:
         PostContainer:
-          Type: Api
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref MyServerlessApi
             Path: /containers
             Method: POST
 
   ContainerDeleteFunction:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: .
-        Handler: src/handlers/containers/containers-delete.handler
-        Runtime: nodejs24.x
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref AWSHomeDBTable
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref AWSHomeDBTable
-        Events:
-          DeleteContainerById:
-            Type: Api
-            Properties:
-              RestApiId: !Ref MyServerlessApi
-              Path: /containers/{id}
-              Method: DELETE            
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/containers/containers-delete.handler
+      Runtime: nodejs24.x
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        DeleteContainerById:
+          Type: HttpApi
+          Properties:
+            Path: /containers/{id}
+            Method: DELETE
 
   ContainerUpdateFunction:
     Type: AWS::Serverless::Function
@@ -134,11 +139,14 @@ Resources:
             TableName: !Ref AWSHomeDBTable
       Events:
         UpdateContainerById:
-          Type: Api
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: PUT
+
+  # =========================
+  # LOGIN
+  # =========================
 
   LoginFunction:
     Type: AWS::Serverless::Function
@@ -155,21 +163,14 @@ Resources:
             TableName: !Ref AWSHomeDBTable
       Events:
         LoginUser:
-          Type: Api
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref MyServerlessApi
             Path: /login
             Method: POST
-            Auth:
-              Authorizer: NONE
-        LoginPreflight:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyServerlessApi
-            Path: /login
-            Method: OPTIONS
-            Auth:
-              Authorizer: NONE
+
+  # =========================
+  # AUTHORIZER
+  # =========================
 
   AuthorizerFunction:
     Type: AWS::Serverless::Function
@@ -181,12 +182,16 @@ Resources:
         Variables:
           AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
 
-  # DynamoDB table to store item: {id: <ID>, name: <NAME>}
+  # =========================
+  # DYNAMODB TABLE
+  # =========================
+
   AWSHomeDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Sub "${AWS::StackName}-Data"
       BillingMode: PAY_PER_REQUEST
+
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
@@ -202,11 +207,13 @@ Resources:
           AttributeType: S
         - AttributeName: entityType
           AttributeType: S
+
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
         - AttributeName: SK
           KeyType: RANGE
+
       GlobalSecondaryIndexes:
         - IndexName: CategoryIndex
           KeySchema:
@@ -214,18 +221,21 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
         - IndexName: PurchasedFromIndex
           KeySchema:
             - AttributeName: purchasedFrom
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
         - IndexName: ItemNameIndex
           KeySchema:
             - AttributeName: itemName
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+
         - IndexName: WarrantyIndex
           KeySchema:
             - AttributeName: entityType
@@ -234,10 +244,13 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+
       SSESpecification:
         SSEEnabled: true
+
       Tags:
         - Key: Application
           Value: AWSHomeDB

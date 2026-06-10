@@ -18,69 +18,55 @@ function base64UrlEncode(value) {
 
 function verifyToken(token) {
   const parts = token.split('.');
-  if (parts.length !== 3) {
-    return null;
-  }
+  if (parts.length !== 3) return null;
 
   const [headerPart, payloadPart, signaturePart] = parts;
   const signingInput = `${headerPart}.${payloadPart}`;
+
   const expectedSignature = base64UrlEncode(
-    crypto.createHmac('sha256', AUTH_SECRET).update(signingInput).digest()
+    crypto.createHmac('sha256', AUTH_SECRET)
+      .update(signingInput)
+      .digest()
   );
 
-  if (expectedSignature !== signaturePart) {
-    return null;
-  }
+  if (expectedSignature !== signaturePart) return null;
 
   const payload = JSON.parse(base64UrlDecode(payloadPart));
-  const now = Math.floor(Date.now() / 1000);
 
-  if (payload.exp && payload.exp < now) {
-    return null;
-  }
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.exp && payload.exp < now) return null;
 
   return payload;
 }
 
 export const handler = async (event) => {
   console.log("===== AUTHORIZER INVOKED =====");
-  console.log("Incoming Method ARN:", event.methodArn);
 
   try {
     const token = event.authorizationToken || '';
-    const bearerToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+    const bearerToken = token.startsWith('Bearer ')
+      ? token.slice(7)
+      : token;
+
     const payload = verifyToken(bearerToken);
 
-    // 🚀 STEP 1: Dynamically convert the literal methodArn into a generic wildcard stage ARN
-    // Transforms 'arn:aws:execute-api:region:acct:apiId/develop/GET/containers' into 'arn:aws:execute-api:region:acct:apiId/develop/*'
-    const arnParts = event.methodArn.split('/');
-    const wildcardResource = `${arnParts[0]}/${arnParts[1]}/*`;
-
     if (!payload) {
-      console.log("❌ AUTHORIZATION FAILED");
-      throw new Error('Unauthorized'); // Bubbles up as a standard 401 instead of a 403
+      console.log("❌ AUTH FAILED");
+      return { isAuthorized: false };
     }
 
-    console.log("✅ AUTHORIZATION SUCCEEDED");
+    console.log("✅ AUTH SUCCESS");
+
     return {
-      principalId: payload.loginID || payload.sub || 'user',
-      policyDocument: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Action: 'execute-api:Invoke',
-            Effect: 'Allow',
-            Resource: wildcardResource, // 🚀 STEP 2: Allows access to ALL endpoints inside this stage
-          },
-        ],
-      },
+      isAuthorized: true,
       context: {
         loginID: payload.loginID || '',
         role: payload.role || 'USER',
-      },
+      }
     };
+
   } catch (error) {
-    console.error("💥 AUTHORIZER EXCEPTION:", error.message);
-    throw new Error('Unauthorized');
+    console.error("💥 AUTH ERROR:", error.message);
+    return { isAuthorized: false };
   }
 };
