@@ -37,29 +37,37 @@ jobs:
       
       - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 Self-Discovering Staging URL Extraction & Configuration Builder
+      # 🚀 Parse samconfig.toml to dynamically target the real AWS stack name
       - name: Generate Frontend Configuration
         run: |
-          echo "🔎 Scanning CloudFormation to find the matching Staging endpoint..."
+          echo "🔎 Extracting stack name from samconfig.toml..."
           
-          # Searches active stacks for a 'WebEndpoint' key matching 'STAGING' or 'staging'
+          # Reads the stack_name line specifically under the [staging.deploy.parameters] block
+          STACK_NAME=$(sed -n '/\[staging.deploy.parameters\]/,/\[/p' samconfig.toml | grep -E "stack_name\s*=" | head -n 1 | cut -d'"' -f2 | xargs)
+          
+          if [ -z "$STACK_NAME" ]; then
+            echo "⚠️ Staging block format parsing failed. Trying standard key-value grep..."
+            STACK_NAME=$(grep -E "^stack_name\s*=" samconfig.toml | head -n 1 | cut -d'"' -f2 | xargs)
+          fi
+          
+          echo "🎯 Identified Active AWS Stack: $STACK_NAME"
+          
+          echo "📥 Fetching WebEndpoint value straight from AWS CloudFormation..."
           API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
             --region ap-southeast-2 \
-            --query "Stacks[?contains(StackName, 'STAGING') || contains(StackName, 'staging')].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
           
-          # Circuit Breaker: Crash the pipeline cleanly if the URL cannot be resolved
           if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Could not locate a CloudFormation stack containing 'STAGING' with an output named 'WebEndpoint'."
-            echo "💡 Troubleshooting Step: Check your AWS Console to verify your stack outputs are deployed completely."
+            echo "❌ CRITICAL ERROR: Could not locate the 'WebEndpoint' output inside the '$STACK_NAME' stack."
             exit 1
           fi
           
-          # Clean whitespace and trailing slashes completely out of the text string
           API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
           
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Successfully written configuration payload to frontend/config.js: $API_URL_CLEAN"
+          echo "✅ Successfully compiled configuration payload: $API_URL_CLEAN"
 
       # 📦 Stage environment setup
       - name: Prepare Staging Subdirectory
@@ -100,29 +108,39 @@ jobs:
       
       - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
 
-      # 🚀 Self-Discovering Production URL Extraction & Configuration Builder
+      # 🚀 Parse samconfig.toml to dynamically target the real AWS stack name
       - name: Generate Frontend Configuration
         run: |
-          echo "🔎 Scanning CloudFormation to find the matching Production endpoint..."
+          echo "🔎 Extracting stack name from samconfig.toml..."
           
-          # Searches active stacks for a 'WebEndpoint' key matching 'PROD' or 'prod'
+          # Reads the stack_name line specifically under the [production.deploy.parameters] block
+          STACK_NAME=$(sed -n '/\[production.deploy.parameters\]/,/\[/p' samconfig.toml | grep -E "stack_name\s*=" | head -n 1 | cut -d'"' -f2 | xargs)
+          
+          if [ -z "$STACK_NAME" ]; then
+            echo "⚠️ Production block format parsing failed. Trying standard key-value grep..."
+            STACK_NAME=$(grep -E "^stack_name\s*=" samconfig.toml | head -n 1 | cut -d'"' -f2 | xargs)
+          fi
+          
+          echo "🎯 Identified Active AWS Stack: $STACK_NAME"
+          
+          echo "📥 Fetching WebEndpoint value straight from AWS CloudFormation..."
           API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
             --region ap-southeast-2 \
-            --query "Stacks[?contains(StackName, 'PROD') || contains(StackName, 'prod')].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
+            --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
           
           if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Could not locate a CloudFormation stack containing 'PROD' with an output named 'WebEndpoint'."
+            echo "❌ CRITICAL ERROR: Could not locate the 'WebEndpoint' output inside the '$STACK_NAME' stack."
             exit 1
           fi
           
-          # Clean whitespace and trailing slashes completely out of the text string
           API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
           
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Successfully written configuration payload to frontend/config.js: $API_URL_CLEAN"
+          echo "✅ Successfully compiled configuration payload: $API_URL_CLEAN"
 
-      # 📤 Upload Production code to GitHub Pages infrastructure (Isolated root build directory)
+      # 📤 Upload Production code to GitHub Pages infrastructure
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
