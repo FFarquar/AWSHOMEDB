@@ -41,6 +41,7 @@ Resources:
         Authorizers:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
+            AuthorizerPayloadFormatVersion: '2.0'
             Identity:
               Headers:
                 - Authorization
