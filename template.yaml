@@ -5,7 +5,6 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
-# Allows your GitHub Actions workflow to pass "Stage" or "Develop" dynamically
 Parameters:
   StageName:
     Type: String
@@ -17,15 +16,12 @@ Resources:
   MyServerlessApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: !Ref StageName # Dynamically maps to your branch environment parameter
-      
-      # 🚀 FIXED: AllowOrigin updated to your specific ffarquar.github.io domain
+      StageName: !Ref StageName
       Cors:
         AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-        AllowOrigin: "'https://ffarquar.github.io'"
+        AllowOrigin: "'https://github.io'"
         MaxAge: "'600'"
-
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
@@ -108,7 +104,6 @@ Resources:
           Variables:
             TABLE_NAME: !Ref AWSHomeDBTable
         Policies:
-          # Grants permission to perform write/delete execution rules on this table
           - DynamoDBCrudPolicy:
               TableName: !Ref AWSHomeDBTable
         Events:
@@ -129,7 +124,6 @@ Resources:
         Variables:
           TABLE_NAME: !Ref AWSHomeDBTable
       Policies:
-        # Grants write/update execution rule bounds on this table instance
         - DynamoDBCrudPolicy:
             TableName: !Ref AWSHomeDBTable
       Events:
@@ -138,7 +132,7 @@ Resources:
           Properties:
             RestApiId: !Ref MyServerlessApi
             Path: /containers/{id}
-            Method: PUT # You can use PUT or PATCH here
+            Method: PUT
 
   LoginFunction:
     Type: AWS::Serverless::Function
@@ -160,6 +154,15 @@ Resources:
             RestApiId: !Ref MyServerlessApi
             Path: /login
             Method: POST
+            Auth:
+              Authorizer: NONE
+        # 🚀 FIXED: Added explicit, open OPTIONS method handler to bypass global default token authorizer blocks
+        LoginPreflight:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyServerlessApi
+            Path: /login
+            Method: OPTIONS
             Auth:
               Authorizer: NONE
 
