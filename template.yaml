@@ -5,13 +5,19 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+# 🚀 ADD THIS: Allows your GitHub Actions workflow to pass "Stage" or "Develop" dynamically
+Parameters:
+  StageName:
+    Type: String
+    Default: Stage
+    Description: "The deployment stage name passed from your branch workflow"
+
 Resources:
-  # 🚀 Fixed Explicit API Definition
-  # StageName is required by SAM, changed to 'Prod' to bypass your CloudFormation collision.
+  # 🚀 Centralized Explicit API Definition
   MyServerlessApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
+      StageName: !Ref StageName # 🚀 Dynamically maps to your branch environment parameter
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
@@ -181,4 +187,4 @@ Resources:
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${MyServerlessApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
+    Value: !Sub "https://${MyServerlessApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${StageName}/"
