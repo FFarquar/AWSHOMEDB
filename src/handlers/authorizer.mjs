@@ -43,44 +43,25 @@ function verifyToken(token) {
 }
 
 export const handler = async (event) => {
-
   console.log("===== AUTHORIZER INVOKED =====");
-  console.log(JSON.stringify(event, null, 2));
-
-  console.log("AUTH CHECK", {
-  arn: event.methodArn,
-  token: event.authorizationToken
-  });
+  console.log("Incoming Method ARN:", event.methodArn);
 
   try {
     const token = event.authorizationToken || '';
     const bearerToken = token.startsWith('Bearer ') ? token.slice(7) : token;
     const payload = verifyToken(bearerToken);
 
+    // 🚀 STEP 1: Dynamically convert the literal methodArn into a generic wildcard stage ARN
+    // Transforms 'arn:aws:execute-api:region:acct:apiId/develop/GET/containers' into 'arn:aws:execute-api:region:acct:apiId/develop/*'
+    const arnParts = event.methodArn.split('/');
+    const wildcardResource = `${arnParts[0]}/${arnParts[1]}/*`;
+
     if (!payload) {
-
-      console.log("AUTHORIZATION FAILED");
-      console.log("methodArn:", event.methodArn);
-
-      return {
-        principalId: 'anonymous',
-        policyDocument: {
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Action: 'execute-api:Invoke',
-              Effect: 'Deny',
-              Resource: event.methodArn,
-            },
-          ],
-        },
-      };
+      console.log("❌ AUTHORIZATION FAILED");
+      throw new Error('Unauthorized'); // Bubbles up as a standard 401 instead of a 403
     }
 
-    console.log("AUTHORIZATION SUCCEEDED");
-    console.log("principalId:", payload.loginID || payload.sub);
-    console.log("methodArn:", event.methodArn);
-
+    console.log("✅ AUTHORIZATION SUCCEEDED");
     return {
       principalId: payload.loginID || payload.sub || 'user',
       policyDocument: {
@@ -89,7 +70,7 @@ export const handler = async (event) => {
           {
             Action: 'execute-api:Invoke',
             Effect: 'Allow',
-            Resource: event.methodArn,
+            Resource: wildcardResource, // 🚀 STEP 2: Allows access to ALL endpoints inside this stage
           },
         ],
       },
@@ -99,19 +80,7 @@ export const handler = async (event) => {
       },
     };
   } catch (error) {
-    console.error(error);
-    return {
-      principalId: 'anonymous',
-      policyDocument: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Action: 'execute-api:Invoke',
-            Effect: 'Deny',
-            Resource: event.methodArn,
-          },
-        ],
-      },
-    };
+    console.error("💥 AUTHORIZER EXCEPTION:", error.message);
+    throw new Error('Unauthorized');
   }
 };
