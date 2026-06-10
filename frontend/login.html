@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AWS Home DB - Login</title>
+    
+    <!-- 🔑 FIX 1: Load the dynamic configuration file compiled by GitHub Actions -->
+    <script src="config.js"></script>
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }
@@ -35,8 +39,9 @@
 </div>
 
 <script>
-    // Dynamically reads the URL compiled by GitHub Actions
-    const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+    // 🔑 FIX 2: Added optional chaining (?.) and an empty fallback string '' 
+    // This prevents the runtime script from crashing if config.js hasn't finished evaluating
+    const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || '';
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -45,6 +50,13 @@
         const errorDiv = document.getElementById('errorMessage');
         
         errorDiv.style.display = 'none';
+
+        // 🔑 FIX 3: Catch configuration errors immediately
+        if (!API_BASE_URL) {
+            errorDiv.textContent = "Configuration Error: Unable to locate AWS API base URL endpoints.";
+            errorDiv.style.display = 'block';
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/login`, {
@@ -59,14 +71,11 @@
                 throw new Error(data.message || 'Invalid username or password credentials.');
             }
 
-            // 🚀 SUCCESS: Save the returned JWT token string inside localStorage
-            // Adjust 'data.token' if your login API returns a different JSON property path
             localStorage.setItem('authToken', data.token);
-            
-            // Redirect the user to your main container interface dashboard view
             window.location.href = 'containers.html';
 
         } catch (err) {
+            // 🚀 SUCCESS: Network errors or bad server responses now display accurately inside the UI block
             errorDiv.textContent = err.message;
             errorDiv.style.display = 'block';
         }
