@@ -9,6 +9,13 @@ const ddb = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME;
 const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
 
+// 🚀 CENTRALIZED CORS HEADERS OBJECT
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://github.io',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
+  'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
+};
+
 function base64UrlEncode(value) {
   return Buffer.from(value)
     .toString('base64')
@@ -66,6 +73,7 @@ export const handler = async (event) => {
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 405,
+        headers: CORS_HEADERS, // Added CORS
         body: JSON.stringify({ message: 'Only POST is supported' }),
       };
     }
@@ -81,6 +89,7 @@ export const handler = async (event) => {
     if (!loginID || !password) {
       return {
         statusCode: 400,
+        headers: CORS_HEADERS, // Added CORS
         body: JSON.stringify({ message: 'loginID and password are required' }),
       };
     }
@@ -99,6 +108,7 @@ export const handler = async (event) => {
     if (!user || user.active !== true) {
       return {
         statusCode: 401,
+        headers: CORS_HEADERS, // Added CORS
         body: JSON.stringify({ message: 'Invalid login credentials' }),
       };
     }
@@ -109,6 +119,7 @@ export const handler = async (event) => {
     if (!authenticated) {
       return {
         statusCode: 401,
+        headers: CORS_HEADERS, // Added CORS
         body: JSON.stringify({ message: 'Invalid login credentials' }),
       };
     }
@@ -124,8 +135,10 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers: CORS_HEADERS, // Added CORS
       body: JSON.stringify({
         accessToken: token,
+        token: token, // Added fallback token key alias for login.html compatibility
         tokenType: 'Bearer',
         expiresIn: 3600,
         role: user.role || 'USER',
@@ -135,6 +148,7 @@ export const handler = async (event) => {
     console.error(error);
     return {
       statusCode: 500,
+      headers: CORS_HEADERS, // Added CORS
       body: JSON.stringify({ message: 'Login failed', error: error.message }),
     };
   }

@@ -19,11 +19,11 @@ Resources:
     Properties:
       StageName: !Ref StageName # Dynamically maps to your branch environment parameter
       
-      # 🚀 FIXED: Added CORS policy to allow GitHub Pages frontend traffic to make API requests
+      # 🚀 FIXED: AllowOrigin updated to your specific ffarquar.github.io domain
       Cors:
         AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-        AllowOrigin: "'https://github.io'"
+        AllowOrigin: "'https://ffarquar.github.io'"
         MaxAge: "'600'"
 
       Auth:
