@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AWS Home DB - Containers</title>
+
+<script src="./config.js"></script>
+
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+        margin: 0;
+        background: #f4f6f9;
+    }
+
+    header {
+        background: #232f3e;
+        color: white;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .container {
+        padding: 16px;
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    button {
+        cursor: pointer;
+        border: none;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        min-height: 40px;
+    }
+
+    .btn-primary { background: #ff9900; color: white; }
+    .btn-secondary { background: #555; color: white; }
+
+    /* TABLE WRAPPER → FIXES MOBILE OVERFLOW */
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        background: white;
+        border-radius: 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px; /* forces scroll instead of squish */
+    }
+
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: #f0f0f0;
+    }
+
+    tr:hover {
+        background: #fafafa;
+    }
+
+    .link {
+        color: #0073bb;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    /* MODAL */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4);
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 18px;
+        width: 100%;
+        max-width: 420px;
+        border-radius: 10px;
+        box-sizing: border-box;
+    }
+
+    .form-group {
+        margin-bottom: 10px;
+    }
+
+    label {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 4px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .small {
+        font-size: 12px;
+        color: #666;
+        margin-top: 6px;
+        word-break: break-word;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    /* MOBILE TWEAKS */
+    @media (max-width: 600px) {
+        th, td {
+            font-size: 13px;
+        }
+
+        button {
+            width: 100%;
+        }
+
+        .toolbar {
+            flex-direction: column;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <div>AWS Home DB - Containers</div>
+    <button class="btn-secondary" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="openCreate()">New Container</button>
+        <button class="btn-secondary" onclick="loadContainers()">Refresh</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Purchase Date</th>
+                    <th>Price</th>
+                    <th>Warranty</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+    <div class="modal-content">
+
+        <h3 id="modalTitle">Container</h3>
+
+        <div class="form-group">
+            <label>Name</label>
+            <input id="name" />
+        </div>
+
+        <div class="form-group">
+            <label>Photo Location</label>
+            <input id="photoLocation" />
+        </div>
+
+        <div class="form-group">
+            <label>Purchase Date</label>
+            <input id="purchaseDate" type="date"/>
+        </div>
+
+        <div class="form-group">
+            <label>Warranty Finish Date</label>
+            <input id="warrantyFinishDate" type="date"/>
+        </div>
+
+        <div class="form-group">
+            <label>Extended Warranty Finish Date</label>
+            <input id="extendedWarrantyFinishDate" type="date"/>
+        </div>
+
+        <div class="form-group">
+            <label>Purchase Price</label>
+            <input id="purchasePrice" type="number"/>
+        </div>
+
+        <div class="small" id="editHint"></div>
+
+        <div class="actions">
+            <button class="btn-primary" onclick="save()">Save</button>
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const API = window.APP_CONFIG.API_BASE_URL;
+const token = localStorage.getItem("authToken");
+
+if (!token) {
+    window.location.href = "login.html";
+}
+
+let containers = [];
+let editingId = null;
+
+function authHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+async function loadContainers() {
+    const res = await fetch(`${API}/containers`, {
+        headers: authHeaders()
+    });
+
+    containers = await res.json();
+    renderTable();
+}
+
+function renderTable() {
+    const body = document.getElementById("tableBody");
+    body.innerHTML = "";
+
+    containers.forEach(c => {
+
+        const pk = c.PK;
+
+        body.innerHTML += `
+        <tr>
+            <td>
+                <span class="link" onclick="openItems('${pk}')">
+                    ${c.name}
+                </span>
+            </td>
+            <td>${c.purchaseDate || ""}</td>
+            <td>$${c.purchasePrice || 0}</td>
+            <td>${c.warrantyFinishDate || ""}</td>
+            <td>
+                <button onclick="edit('${pk}')">Edit</button>
+                <button onclick="removeItem('${pk}')">Delete</button>
+            </td>
+        </tr>`;
+    });
+}
+
+function openItems(pk) {
+    const id = pk.replace("CONTAINER#", "");
+    window.location.href = `items.html?containerId=${id}`;
+}
+
+function openCreate() {
+    editingId = null;
+    document.getElementById("modalTitle").innerText = "Create Container";
+    clearForm();
+    document.getElementById("modal").style.display = "flex";
+}
+
+function edit(pk) {
+    const item = containers.find(x => x.PK === pk);
+    editingId = pk;
+
+    document.getElementById("modalTitle").innerText = "Edit Container";
+
+    document.getElementById("name").value = item.name || "";
+    document.getElementById("photoLocation").value = item.photoLocation || "";
+    document.getElementById("purchaseDate").value = item.purchaseDate || "";
+    document.getElementById("warrantyFinishDate").value = item.warrantyFinishDate || "";
+    document.getElementById("extendedWarrantyFinishDate").value = item.extendedWarrantyFinishDate || "";
+    document.getElementById("purchasePrice").value = item.purchasePrice || "";
+
+    document.getElementById("editHint").innerText = pk;
+
+    document.getElementById("modal").style.display = "flex";
+}
+
+function clearForm() {
+    ["name","photoLocation","purchaseDate","warrantyFinishDate","extendedWarrantyFinishDate","purchasePrice"]
+    .forEach(id => document.getElementById(id).value = "");
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+async function save() {
+    const name = document.getElementById("name").value;
+    const photoLocation = document.getElementById("photoLocation").value;
+    const purchaseDate = document.getElementById("purchaseDate").value;
+    const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
+    const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
+    const purchasePrice = Number(document.getElementById("purchasePrice").value);
+
+    if (!name) return alert("Name required");
+
+    if (editingId) {
+
+        const original = containers.find(c => c.PK === editingId);
+        const update = {};
+
+        if (name !== original.name) update.name = name;
+        if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
+        if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
+        if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
+        if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) update.extendedWarrantyFinishDate = extendedWarrantyFinishDate;
+        if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
+
+        await fetch(`${API}/containers/${editingId}`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify(update)
+        });
+
+    } else {
+
+        const id = "CONTAINER" + Date.now();
+        const pk = `CONTAINER#${id}`;
+
+        await fetch(`${API}/containers`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+                PK: pk,
+                SK: "METADATA",
+                containerId: pk,
+                name,
+                photoLocation,
+                purchaseDate,
+                warrantyFinishDate,
+                extendedWarrantyFinishDate,
+                purchasePrice
+            })
+        });
+    }
+
+    closeModal();
+    await loadContainers();
+}
+
+async function removeItem(pk) {
+    if (!confirm("Delete this container?")) return;
+
+    await fetch(`${API}/containers/${pk}`, {
+        method: "DELETE",
+        headers: authHeaders()
+    });
+
+    await loadContainers();
+}
+
+function logout() {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+}
+
+loadContainers();
+</script>
+
+</body>
+</html>
