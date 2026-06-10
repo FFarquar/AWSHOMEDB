@@ -5,7 +5,7 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
-# 🚀 ADD THIS: Allows your GitHub Actions workflow to pass "Stage" or "Develop" dynamically
+# Allows your GitHub Actions workflow to pass "Stage" or "Develop" dynamically
 Parameters:
   StageName:
     Type: String
@@ -13,11 +13,19 @@ Parameters:
     Description: "The deployment stage name passed from your branch workflow"
 
 Resources:
-  # 🚀 Centralized Explicit API Definition
+  # Centralized Explicit API Definition
   MyServerlessApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: !Ref StageName # 🚀 Dynamically maps to your branch environment parameter
+      StageName: !Ref StageName # Dynamically maps to your branch environment parameter
+      
+      # 🚀 FIXED: Added CORS policy to allow GitHub Pages frontend traffic to make API requests
+      Cors:
+        AllowMethods: "'POST,GET,OPTIONS,PUT,DELETE'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+        AllowOrigin: "'https://github.io'"
+        MaxAge: "'600'"
+
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
@@ -100,7 +108,7 @@ Resources:
           Variables:
             TABLE_NAME: !Ref AWSHomeDBTable
         Policies:
-          # 🚀 Grants permission to perform write/delete execution rules on this table
+          # Grants permission to perform write/delete execution rules on this table
           - DynamoDBCrudPolicy:
               TableName: !Ref AWSHomeDBTable
         Events:
@@ -130,7 +138,7 @@ Resources:
           Properties:
             RestApiId: !Ref MyServerlessApi
             Path: /containers/{id}
-            Method: PUT # 🚀 You can use PUT or PATCH here
+            Method: PUT # You can use PUT or PATCH here
 
   LoginFunction:
     Type: AWS::Serverless::Function
