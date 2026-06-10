@@ -46,13 +46,22 @@ export const handler = async (event) => {
 
   console.log("===== AUTHORIZER INVOKED =====");
   console.log(JSON.stringify(event, null, 2));
-  
+
+  console.log("AUTH CHECK", {
+  arn: event.methodArn,
+  token: event.authorizationToken
+  });
+
   try {
     const token = event.authorizationToken || '';
     const bearerToken = token.startsWith('Bearer ') ? token.slice(7) : token;
     const payload = verifyToken(bearerToken);
 
     if (!payload) {
+
+      console.log("AUTHORIZATION FAILED");
+      console.log("methodArn:", event.methodArn);
+
       return {
         principalId: 'anonymous',
         policyDocument: {
@@ -67,6 +76,10 @@ export const handler = async (event) => {
         },
       };
     }
+
+    sconsole.log("AUTHORIZATION SUCCEEDED");
+    console.log("principalId:", payload.loginID || payload.sub);
+    console.log("methodArn:", event.methodArn);
 
     return {
       principalId: payload.loginID || payload.sub || 'user',

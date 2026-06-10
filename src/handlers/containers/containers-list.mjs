@@ -9,10 +9,11 @@ const ddb = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.TABLE_NAME;
 
-export const handler = async () => {
+export const handler = async (event) => {
 
-console.log("===== CONTAINERS LIST =====");
-console.log(JSON.stringify(event, null, 2));
+  console.log("===== CONTAINERS LIST =====");
+  console.log(JSON.stringify(event, null, 2));
+  
   try {
     const result = await ddb.send(
       new ScanCommand({
