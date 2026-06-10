@@ -159,7 +159,7 @@ Resources:
           AttributeType: S
 
         - AttributeName: itemName
-          AttributeType: Ss
+          AttributeType: S
 
         - AttributeName: warrantyExpiryDate
           AttributeType: S
