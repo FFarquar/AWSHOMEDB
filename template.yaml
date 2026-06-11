@@ -11,6 +11,7 @@ Globals:
       Variables:
         TABLE_NAME: !Ref AWSHomeDBTable
         # AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
+        # AUTH_SECRET: !Sub "StagingAuthSecretKey2026"
         AUTH_SECRET: !Sub "StagingAuthSecretKey2026"
 
 Parameters:
