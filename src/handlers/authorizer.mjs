@@ -23,18 +23,27 @@ function verifyToken(token) {
   const [headerPart, payloadPart, signaturePart] = parts;
   const signingInput = `${headerPart}.${payloadPart}`;
 
-  const expectedSignature = base64UrlEncode(
-    crypto.createHmac('sha256', AUTH_SECRET)
-      .update(signingInput)
-      .digest()
-  );
+  // 🛠️ FIX: Match the exact encoding sequence used in login.mjs
+  const expectedSignature = crypto
+    .createHmac('sha256', AUTH_SECRET)
+    .update(signingInput)
+    .digest('base64')
+    .replace(/=+$/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 
-  if (expectedSignature !== signaturePart) return null;
+  if (expectedSignature !== signaturePart) {
+    console.log("❌ SIGNATURE MISMATCH");
+    return null;
+  }
 
   const payload = JSON.parse(base64UrlDecode(payloadPart));
 
   const now = Math.floor(Date.now() / 1000);
-  if (payload.exp && payload.exp < now) return null;
+  if (payload.exp && payload.exp < now) {
+    console.log("❌ TOKEN EXPIRED");
+    return null;
+  }
 
   return payload;
 }
