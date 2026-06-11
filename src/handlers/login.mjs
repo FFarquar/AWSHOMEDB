@@ -65,6 +65,7 @@ function signToken(payload) {
 }
 
 export const handler = async (event) => {
+  
   try {
     // HTTP API safe method extraction
     const method =

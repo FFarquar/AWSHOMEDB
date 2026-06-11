@@ -81,7 +81,10 @@ function verifyToken(token) {
 // };
 
 export const handler = async (event) => {
-  console.log("===== AUTHORIZER INVOKED =====");
+  console.log("===== VERSION 1.0 AUTHORIZER INVOKED =====");
+  // 🔍 Temporary debug lines to expose the hidden value mismatch
+  console.log("DEBUG - CODE SECRET IS:", AUTH_SECRET);
+  console.log("DEBUG - INCOMING TOKEN STRING IS:", event.authorizationToken ? "PRESENT" : "EMPTY");
   
   try {
     // Format 1.0 safely extracts the token from event.authorizationToken
@@ -96,8 +99,11 @@ export const handler = async (event) => {
       return generatePolicy('user', 'Deny', event.methodArn || '*');
     }
 
-    console.log("✅ AUTH SUCCESS");
-    return generatePolicy(payload.loginID, 'Allow', event.methodArn || '*');
+    // console.log("✅ AUTH SUCCESS");
+    // return generatePolicy(payload.loginID, 'Allow', event.methodArn || '*');
+
+    console.log("✅ AUTH SUCCESS - ALLOWING ACCESS");
+    return generatePolicy(payload.loginID, 'Allow', event.methodArn);    
 
   } catch (error) {
     console.error("💥 AUTH ERROR:", error.message);
