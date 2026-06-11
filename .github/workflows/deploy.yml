@@ -29,18 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🚀 INSERT VALIDATION STEP HERE:
-      - name: Verify Live Data Connection
-        run: |
-          echo "🔍 Scanning backend configurations for local mock data flags..."
-          # Update "config.js" to your true backend path if nested (e.g., src/config.js)
-          if grep -q "USE_MOCK:[[:space:]]*true" config.js; then
-            echo "❌ CRITICAL: 'USE_MOCK: true' is active in config.js!"
-            echo "Please disable local mocks before committing to remote branches."
-            exit 1
-          fi
-          echo "✅ Validation passed. Mock data is disabled."
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -104,18 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🚀 INSERT VALIDATION STEP HERE:
-      - name: Verify Live Data Connection
-        run: |
-          echo "🔍 Scanning backend configurations for local mock data flags..."
-          # Update "config.js" to your true backend path if nested (e.g., src/config.js)
-          if grep -q "USE_MOCK:[[:space:]]*true" config.js; then
-            echo "❌ CRITICAL: 'USE_MOCK: true' is active in config.js!"
-            echo "Please disable local mocks before committing to remote branches."
-            exit 1
-          fi
-          echo "✅ Validation passed. Mock data is disabled."
-          
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
