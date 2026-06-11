@@ -4,7 +4,13 @@ import crypto from 'node:crypto';
 
 //const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret'; //this wone worked
 // const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
-const AUTH_SECRET = (process.env.AUTH_SECRET || 'StagingAuthSecretKey2026').trim();
+//const AUTH_SECRET = (process.env.AUTH_SECRET || 'StagingAuthSecretKey2026').trim();
+
+const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
+
+if (!AUTH_SECRET) {
+  console.error("❌ CRITICAL INITIALIZATION ERROR: AUTH_SECRET is completely missing from the system environment!");
+}
 
 function base64UrlDecode(value) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
