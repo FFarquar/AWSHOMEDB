@@ -10,6 +10,12 @@ Parameters:
     Default: Stage
     Description: "The deployment stage name passed from your branch workflow"
 
+Globals:
+  Function:
+    Environment:
+      Variables:
+        AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
+
 Resources:
 
   # =========================
@@ -161,10 +167,10 @@ Resources:
       CodeUri: .
       Handler: src/handlers/login.handler
       Runtime: nodejs24.x
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref AWSHomeDBTable
-          AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
+      # Environment:
+      #   Variables:
+      #     TABLE_NAME: !Ref AWSHomeDBTable
+      #     AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AWSHomeDBTable
@@ -188,9 +194,9 @@ Resources:
       CodeUri: .
       Handler: src/handlers/authorizer.handler
       Runtime: nodejs24.x
-      Environment:
-        Variables:
-          AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
+      # Environment:
+      #   Variables:
+      #     AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
 
   # =========================
   # DYNAMODB
