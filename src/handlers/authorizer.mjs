@@ -82,36 +82,46 @@ function verifyToken(token) {
 
 export const handler = async (event) => {
   console.log("===== AUTHORIZER INVOKED =====");
-  console.log(JSON.stringify(event, null, 2)); // 🚀 Temporarily log the event structure
-
+  
   try {
-    // 🛠️ FIX: Look inside headers instead of authorizationToken
-    const headers = event.headers || {};
-    const token = headers.authorization || headers.Authorization || '';
-
-    const bearerToken = token.startsWith('Bearer ')
-      ? token.slice(7)
-      : token;
+    // Format 1.0 safely extracts the token from event.authorizationToken
+    const token = event.authorizationToken || '';
+    const bearerToken = token.startsWith('Bearer ') ? token.slice(7) : token;
 
     const payload = verifyToken(bearerToken);
 
+    // If validation fails, return an explicit IAM "Deny" policy
     if (!payload) {
       console.log("❌ AUTH FAILED");
-      return { isAuthorized: false };
+      return generatePolicy('user', 'Deny', event.methodArn || '*');
     }
 
     console.log("✅ AUTH SUCCESS");
-
-    return {
-      isAuthorized: true,
-      context: {
-        loginID: payload.loginID || '',
-        role: payload.role || 'USER',
-      }
-    };
+    return generatePolicy(payload.loginID, 'Allow', event.methodArn || '*');
 
   } catch (error) {
     console.error("💥 AUTH ERROR:", error.message);
-    return { isAuthorized: false };
+    return generatePolicy('user', 'Deny', '*');
   }
 };
+
+// Helper function to build a flawless Format 1.0 IAM Policy
+function generatePolicy(principalId, effect, resource) {
+  return {
+    principalId: principalId,
+    policyDocument: {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Action: 'execute-api:Invoke',
+          Effect: effect,
+          Resource: resource
+        }
+      ]
+    },
+    context: {
+      loginID: principalId,
+      role: 'ADMIN' // Simple context assignment
+    }
+  };
+}
