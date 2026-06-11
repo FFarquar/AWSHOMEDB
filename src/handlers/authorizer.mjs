@@ -39,11 +39,47 @@ function verifyToken(token) {
   return payload;
 }
 
+// export const handler = async (event) => {
+//   console.log("===== AUTHORIZER INVOKED =====");
+
+//   try {
+//     const token = event.authorizationToken || '';
+//     const bearerToken = token.startsWith('Bearer ')
+//       ? token.slice(7)
+//       : token;
+
+//     const payload = verifyToken(bearerToken);
+
+//     if (!payload) {
+//       console.log("❌ AUTH FAILED");
+//       return { isAuthorized: false };
+//     }
+
+//     console.log("✅ AUTH SUCCESS");
+
+//     return {
+//       isAuthorized: true,
+//       context: {
+//         loginID: payload.loginID || '',
+//         role: payload.role || 'USER',
+//       }
+//     };
+
+//   } catch (error) {
+//     console.error("💥 AUTH ERROR:", error.message);
+//     return { isAuthorized: false };
+//   }
+// };
+
 export const handler = async (event) => {
   console.log("===== AUTHORIZER INVOKED =====");
+  console.log(JSON.stringify(event, null, 2)); // 🚀 Temporarily log the event structure
 
   try {
-    const token = event.authorizationToken || '';
+    // 🛠️ FIX: Look inside headers instead of authorizationToken
+    const headers = event.headers || {};
+    const token = headers.authorization || headers.Authorization || '';
+
     const bearerToken = token.startsWith('Bearer ')
       ? token.slice(7)
       : token;
@@ -70,4 +106,3 @@ export const handler = async (event) => {
     return { isAuthorized: false };
   }
 };
-
