@@ -236,227 +236,227 @@
 </div>
 
 <script>
-const API = window.APP_CONFIG.API_BASE_URL;
-// const token = localStorage.getItem("authToken");
+    // 🛠️ DELETE YOUR OLD SCRIPT TAG CONTENTS AND PASTE THIS INSTEAD:
+    const API = window.APP_CONFIG.API_BASE_URL;
 
-// if (!token) {
-//     window.location.href = "login.html";
-// }
+    let token = localStorage.getItem("authToken");
 
-if (!window.APP_CONFIG?.USE_MOCK) {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-        window.location.href = "login.html";
-    }
-}
-
-let containers = [];
-let editingId = null;
-
-
-const userRole = localStorage.getItem("userRole") || "USER";
-const isAdmin = userRole === "ADMIN";
-
-document.addEventListener("DOMContentLoaded", () => {
-    if (!isAdmin) {
-        const btnNew = document.getElementById("btnNewContainer");
-        if (btnNew) btnNew.style.display = "none";
-        
-        const thActions = document.getElementById("thActions");
-        if (thActions) thActions.style.display = "none";
-    }
-    loadContainers();
-});
-
-function authHeaders() {
-    return {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-    };
-}
-
-async function loadContainers() {
-    try {
-        containers = await apiGet("/containers", "mock-containers.json");
-
-        if (!Array.isArray(containers)) {
-            console.warn("Invalid containers payload:", containers);
-            containers = [];
+    if (!window.APP_CONFIG?.USE_MOCK) {
+        if (!token) {
+            window.location.href = "login.html";
         }
-
-        renderTable();
-    } catch (err) {
-        console.error(err);
-        containers = [];
-        renderTable();
-    }
-}
-
-function renderTable() {
-    const body = document.getElementById("tableBody");
-    body.innerHTML = "";
-
-    if (!Array.isArray(containers)) {
-        console.warn("renderTable expected array but got:", containers);
-        return;
-    }
-
-    containers.forEach(c => {
-        const pk = c.PK;
-
-        // 🛠️ REPLACE THE OLD BUTTON LINE WITH THIS DYNAMIC CHECK:
-        const actionsCell = isAdmin 
-            ? `<td>
-                <button onclick="edit('${pk}')">Edit</button>
-                <button onclick="removeItem('${pk}')">Delete</button>
-               </td>`
-            : "";
-
-        body.innerHTML += `
-        <tr>
-            <td>
-                <span class="link" onclick="openItems('${pk}')">
-                    ${c.name}
-                </span>
-            </td>
-            <td>${c.purchaseDate || ""}</td>
-            <td>$${c.purchasePrice || 0}</td>
-            <td>${c.warrantyFinishDate || ""}</td>
-            ${actionsCell} <!-- 🛠️ ADD THIS VARIABLE HERE -->
-        </tr>`;
-    });
-}
-
-
-function openItems(pk) {
-    const id = pk.replace("CONTAINER#", "");
-    window.location.href = `items.html?containerId=${id}`;
-}
-
-function openCreate() {
-    if (!isAdmin) return; // 🛠️ INSERT THIS LINE
-    editingId = null;
-    document.getElementById("modalTitle").innerText = "Create Container";
-    clearForm();
-    document.getElementById("modal").style.display = "flex";
-}
-
-function edit(pk) {
-     if (!isAdmin) return;
-    const item = containers.find(x => x.PK === pk);
-    editingId = pk;
-
-    document.getElementById("modalTitle").innerText = "Edit Container";
-
-    document.getElementById("name").value = item.name || "";
-    document.getElementById("photoLocation").value = item.photoLocation || "";
-    document.getElementById("purchaseDate").value = item.purchaseDate || "";
-    document.getElementById("warrantyFinishDate").value = item.warrantyFinishDate || "";
-    document.getElementById("extendedWarrantyFinishDate").value = item.extendedWarrantyFinishDate || "";
-    document.getElementById("purchasePrice").value = item.purchasePrice || "";
-
-    document.getElementById("editHint").innerText = pk;
-
-    document.getElementById("modal").style.display = "flex";
-}
-
-function clearForm() {
-    ["name","photoLocation","purchaseDate","warrantyFinishDate","extendedWarrantyFinishDate","purchasePrice"]
-    .forEach(id => document.getElementById(id).value = "");
-}
-
-function closeModal() {
-    document.getElementById("modal").style.display = "none";
-}
-
-async function save() {
-    const name = document.getElementById("name").value;
-    const photoLocation = document.getElementById("photoLocation").value;
-    const purchaseDate = document.getElementById("purchaseDate").value;
-    const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
-    const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
-    const purchasePrice = Number(document.getElementById("purchasePrice").value);
-
-    if (!name) return alert("Name required");
-
-    if (editingId) {
-
-        const original = containers.find(c => c.PK === editingId);
-        const update = {};
-
-        if (name !== original.name) update.name = name;
-        if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
-        if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
-        if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
-        if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) update.extendedWarrantyFinishDate = extendedWarrantyFinishDate;
-        if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
-
-        //
-        //await fetch(`${API}/containers/${editingId}`, {
-        //    method: "PUT",
-        //    headers: authHeaders(),
-        //    body: JSON.stringify(update)
-        //});
-
-        async function loadContainers() {
-        containers = await apiGet(
-            "/containers",
-            "mock-containers.json"
-        );
-
-        if (!Array.isArray(containers)) {
-            console.warn("Invalid container payload:", containers);
-            containers = [];
-        }
-
-        renderTable();
-}
-
     } else {
+        token = "local-mock-token-xyz";
+    }
 
-        const id = "CONTAINER" + Date.now();
-        const pk = `CONTAINER#${id}`;
+    let containers = [];
+    let editingId = null;
 
-        await fetch(`${API}/containers`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify({
-                PK: pk,
-                SK: "METADATA",
-                containerId: pk,
-                name,
-                photoLocation,
-                purchaseDate,
-                warrantyFinishDate,
-                extendedWarrantyFinishDate,
-                purchasePrice
-            })
+    const userRole = localStorage.getItem("userRole") || "USER";
+    const isAdmin = userRole === "ADMIN";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        if (!isAdmin) {
+            const btnNew = document.getElementById("btnNewContainer");
+            if (btnNew) btnNew.style.display = "none";
+            
+            const thActions = document.getElementById("thActions");
+            if (thActions) thActions.style.display = "none";
+        }
+        loadContainers();
+    });
+
+    function authHeaders() {
+        return {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
+    }
+
+    async function loadContainers() {
+        try {
+            containers = await apiGet("/containers", "mock-containers.json");
+
+            if (!Array.isArray(containers)) {
+                console.warn("Invalid containers payload:", containers);
+                containers = [];
+            }
+
+            renderTable();
+        } catch (err) {
+            console.error(err);
+            containers = [];
+            renderTable();
+        }
+    }
+
+    function renderTable() {
+        const body = document.getElementById("tableBody");
+        body.innerHTML = "";
+
+        if (!Array.isArray(containers)) {
+            console.warn("renderTable expected array but got:", containers);
+            return;
+        }
+
+        containers.forEach(c => {
+            const pk = c.PK;
+
+            const actionsCell = isAdmin 
+                ? `<td>
+                    <button onclick="edit('${pk}')">Edit</button>
+                    <button onclick="removeItem('${pk}')">Delete</button>
+                </td>`
+                : "";
+
+            body.innerHTML += `
+            <tr>
+                <td>
+                    <span class="link" onclick="openItems('${pk}')">
+                        ${c.name}
+                    </span>
+                </td>
+                <td>${c.purchaseDate || ""}</td>
+                <td>$${c.purchasePrice || 0}</td>
+                <td>${c.warrantyFinishDate || ""}</td>
+                ${actionsCell}
+            </tr>`;
         });
     }
 
-    closeModal();
-    await loadContainers();
-}
+    function openItems(pk) {
+        const id = pk.replace("CONTAINER#", "");
+        window.location.href = `items.html?containerId=${id}`;
+    }
 
-async function removeItem(pk) {
-    if (!confirm("Delete this container?")) return;
+    function openCreate() {
+        if (!isAdmin) return; 
+        editingId = null;
+        document.getElementById("modalTitle").innerText = "Create Container";
+        clearForm();
+        document.getElementById("modal").style.display = "flex";
+    }
 
-    await fetch(`${API}/containers/${pk}`, {
-        method: "DELETE",
-        headers: authHeaders()
-    });
+    function edit(pk) {
+        if (!isAdmin) return;
+        const item = containers.find(x => x.PK === pk);
+        editingId = pk;
 
-    await loadContainers();
-}
+        document.getElementById("modalTitle").innerText = "Edit Container";
 
-function logout() {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-}
+        document.getElementById("name").value = item.name || "";
+        document.getElementById("photoLocation").value = item.photoLocation || "";
+        document.getElementById("purchaseDate").value = item.purchaseDate || "";
+        document.getElementById("warrantyFinishDate").value = item.warrantyFinishDate || "";
+        document.getElementById("extendedWarrantyFinishDate").value = item.extendedWarrantyFinishDate || "";
+        document.getElementById("purchasePrice").value = item.purchasePrice || 0;
 
-loadContainers();
+        document.getElementById("editHint").innerText = pk;
+        document.getElementById("modal").style.display = "flex";
+    }
+
+    async function save() {
+        if (!isAdmin) return alert("Unauthorized action.");
+
+        const name = document.getElementById("name").value.trim();
+        const photoLocation = document.getElementById("photoLocation").value.trim();
+        const purchaseDate = document.getElementById("purchaseDate").value;
+        const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
+        const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
+        const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
+
+        if (!name) return alert("Name required");
+
+        const id = "CONTAINER" + Date.now();
+        const pk = editingId || `CONTAINER#${id}`;
+
+        const containerPayload = {
+            PK: pk,
+            SK: "METADATA",
+            containerId: editingId ? editingId.replace("CONTAINER#", "") : id,
+            name,
+            photoLocation,
+            purchaseDate,
+            warrantyFinishDate,
+            extendedWarrantyFinishDate,
+            purchasePrice
+        };
+
+        if (window.APP_CONFIG?.USE_MOCK) {
+            console.log("⚠️ MOCK MODE SAVE INTERCEPTED");
+            if (editingId) {
+                const index = containers.findIndex(c => c.PK === editingId);
+                if (index !== -1) containers[index] = containerPayload;
+            } else {
+                containers.push(containerPayload);
+            }
+            renderTable();
+            closeModal();
+            return; 
+        }
+
+        try {
+            if (editingId) {
+                const cleanId = editingId.replace("CONTAINER#", "");
+                const original = containers.find(c => c.PK === editingId);
+                const update = {};
+
+                if (name !== original.name) update.name = name;
+                if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
+                if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
+                if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
+                if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) update.extendedWarrantyFinishDate = extendedWarrantyFinishDate;
+                if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
+
+                await fetch(`${API}/containers/${cleanId}`, {
+                    method: "PUT",
+                    headers: authHeaders(),
+                    body: JSON.stringify(update)
+                });
+            } else {
+                await fetch(`${API}/containers`, {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify(containerPayload)
+                });
+            }
+            closeModal();
+            await loadContainers();
+        } catch (err) {
+            console.error("AWS Communication Failure:", err);
+            alert(`Failed to execute network transaction: ${err.message}`);
+        }
+    }
+
+    function removeItem(pk) {
+        if (!isAdmin) return;
+        if (confirm("Are you sure you want to delete this container?")) {
+            if (window.APP_CONFIG?.USE_MOCK) {
+                containers = containers.filter(c => c.PK !== pk);
+                renderTable();
+                return;
+            }
+            console.log("Delete cloud path requested for:", pk);
+        }
+    }
+
+    function clearForm() {
+        ["name","photoLocation","purchaseDate","warrantyFinishDate","extendedWarrantyFinishDate","purchasePrice"]
+        .forEach(id => document.getElementById(id).value = "");
+        document.getElementById("editHint").innerText = "";
+    }
+
+    function closeModal() {
+        document.getElementById("modal").style.display = "none";
+        editingId = null;
+        clearForm();
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "login.html";
+    }
+
 </script>
 
 </body>
