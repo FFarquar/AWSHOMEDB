@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 
 // const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
 
-const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret';
+//const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret'; //this wone worked
+const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
 
 function base64UrlDecode(value) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');

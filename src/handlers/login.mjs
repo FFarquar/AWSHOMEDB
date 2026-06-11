@@ -8,7 +8,8 @@ const ddb = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.TABLE_NAME;
 // const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
-const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret';
+//const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret';  this one worked
+const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
 
 /**
  * NOTE:
