@@ -13,13 +13,13 @@ Parameters:
 Resources:
 
   # =========================
-  # HTTP API (REPLACES REST API)
+  # HTTP API
   # =========================
   MyServerlessApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: !Ref StageName
-      Description: "AWSHomeDB HTTP API - migrated 2026-06-11"
+      Description: "AWSHomeDB HTTP API"
 
       CorsConfiguration:
         AllowOrigins:
@@ -35,19 +35,20 @@ Resources:
           - PUT
           - DELETE
           - OPTIONS
+        MaxAge: 600
 
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
-            AuthorizerPayloadFormatVersion: '2.0'
+            AuthorizerPayloadFormatVersion: "2.0"
             Identity:
               Headers:
                 - Authorization
 
   # =========================
-  # CONTAINERS LAMBDAS
+  # CONTAINERS
   # =========================
 
   ContainersListFunction:
@@ -66,6 +67,7 @@ Resources:
         GetContainers:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /containers
             Method: GET
 
@@ -85,6 +87,7 @@ Resources:
         GetContainerById:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: GET
 
@@ -104,6 +107,7 @@ Resources:
         PostContainer:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /containers
             Method: POST
 
@@ -123,6 +127,7 @@ Resources:
         DeleteContainerById:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: DELETE
 
@@ -142,11 +147,12 @@ Resources:
         UpdateContainerById:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: PUT
 
   # =========================
-  # LOGIN
+  # LOGIN (PUBLIC)
   # =========================
 
   LoginFunction:
@@ -166,8 +172,11 @@ Resources:
         LoginUser:
           Type: HttpApi
           Properties:
+            ApiId: !Ref MyServerlessApi
             Path: /login
             Method: POST
+            Auth:
+              Authorizer: NONE
 
   # =========================
   # AUTHORIZER
@@ -184,7 +193,7 @@ Resources:
           AUTH_SECRET: !Sub "${AWS::StackName}-auth-secret"
 
   # =========================
-  # DYNAMODB TABLE
+  # DYNAMODB
   # =========================
 
   AWSHomeDBTable:

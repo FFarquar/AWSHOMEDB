@@ -13,6 +13,12 @@ permissions:
   pages: write
   deployments: write
 
+# 🚨 PREVENT PARALLEL DEPLOYS (CRITICAL FIX)
+concurrency:
+  group: aws-sam-deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+
 jobs:
 
   deploy-staging:
@@ -33,64 +39,55 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - run: sam build
-      
-      - run: sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
+      - name: Build
+        run: sam build
 
-      # 🚀 Parse samconfig.toml to dynamically target the real AWS stack name
+      # 🚀 FIXED DEPLOY (NO config-env, NO ambiguity)
+      - name: Deploy to AWS (Staging)
+        run: |
+          sam deploy \
+            --stack-name AWSHOMEDB-STAGING \
+            --region ap-southeast-2 \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --force-upload \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides "StageName=${{ github.ref_name }}"
+
+      # 🚀 Generate Frontend Configuration
       - name: Generate Frontend Configuration
         run: |
-          echo "🔎 Extracting stack name from samconfig.toml..."
-          
-          # Reads the stack_name line specifically under the [staging.deploy.parameters] block
-          STACK_NAME=$(sed -n '/\[staging.deploy.parameters\]/,/\[/p' samconfig.toml | grep -E "stack_name\s*=" | head -n 1 | cut -d'"' -f2 | xargs)
-          
-          if [ -z "$STACK_NAME" ]; then
-            echo "⚠️ Staging block format parsing failed. Trying standard key-value grep..."
-            STACK_NAME=$(grep -E "^stack_name\s*=" samconfig.toml | head -n 1 | cut -d'"' -f2 | xargs)
-          fi
-          
-          echo "🎯 Identified Active AWS Stack: $STACK_NAME"
-          
-          echo "📥 Fetching WebEndpoint value straight from AWS CloudFormation..."
+          echo "🔎 Using fixed stack name: AWSHOMEDB-STAGING"
+
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name "$STACK_NAME" \
+            --stack-name "AWSHOMEDB-STAGING" \
             --region ap-southeast-2 \
             --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
-          
-          if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Could not locate the 'WebEndpoint' output inside the '$STACK_NAME' stack."
-            exit 1
-          fi
-          
+
           API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
-          
+
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Successfully compiled configuration payload: $API_URL_CLEAN"
+          echo "✅ API URL: $API_URL_CLEAN"
 
-      # 📦 Stage environment setup
-      - name: Prepare Staging Subdirectory
-        run: |
-          mkdir -p staging
-          cp -r frontend/* staging/
-          echo "✅ Copied all frontend folder files and artifacts to staging/"
-
-      # 📤 Upload Staging code to GitHub Pages infrastructure
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          #path: '.' 
           path: './frontend'
 
-      # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
+
+    concurrency:
+      group: aws-sam-prod
+      cancel-in-progress: true
 
     steps:
       - uses: actions/checkout@v4
@@ -105,48 +102,40 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - run: sam build
-      
-      - run: sam deploy --config-env production --no-confirm-changeset --no-fail-on-empty-changeset --force-upload --parameter-overrides "StageName=${{ github.ref_name }}"
+      - name: Build
+        run: sam build
 
-      # 🚀 Parse samconfig.toml to dynamically target the real AWS stack name
+      - name: Deploy to AWS (Production)
+        run: |
+          sam deploy \
+            --stack-name AWSHOMEDB-PROD \
+            --region ap-southeast-2 \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --force-upload \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides "StageName=${{ github.ref_name }}"
+
       - name: Generate Frontend Configuration
         run: |
-          echo "🔎 Extracting stack name from samconfig.toml..."
-          
-          # Reads the stack_name line specifically under the [production.deploy.parameters] block
-          STACK_NAME=$(sed -n '/\[production.deploy.parameters\]/,/\[/p' samconfig.toml | grep -E "stack_name\s*=" | head -n 1 | cut -d'"' -f2 | xargs)
-          
-          if [ -z "$STACK_NAME" ]; then
-            echo "⚠️ Production block format parsing failed. Trying standard key-value grep..."
-            STACK_NAME=$(grep -E "^stack_name\s*=" samconfig.toml | head -n 1 | cut -d'"' -f2 | xargs)
-          fi
-          
-          echo "🎯 Identified Active AWS Stack: $STACK_NAME"
-          
-          echo "📥 Fetching WebEndpoint value straight from AWS CloudFormation..."
+          echo "🔎 Using fixed stack name: AWSHOMEDB-PROD"
+
           API_URL=$(aws cloudformation describe-stacks \
-            --stack-name "$STACK_NAME" \
+            --stack-name "AWSHOMEDB-PROD" \
             --region ap-southeast-2 \
             --query "Stacks[0].Outputs[?OutputKey=='WebEndpoint'].OutputValue" \
             --output text)
-          
-          if [ -z "$API_URL" ] || [ "$API_URL" = "None" ]; then
-            echo "❌ CRITICAL ERROR: Could not locate the 'WebEndpoint' output inside the '$STACK_NAME' stack."
-            exit 1
-          fi
-          
-          API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
-          
-          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
-          echo "✅ Successfully compiled configuration payload: $API_URL_CLEAN"
 
-      # 📤 Upload Production code to GitHub Pages infrastructure
+          API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
+
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
+          echo "✅ API URL: $API_URL_CLEAN"
+
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend' 
+          path: './frontend'
 
-      # 🌐 Publish Live to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
