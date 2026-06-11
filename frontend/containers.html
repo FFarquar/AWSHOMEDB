@@ -6,6 +6,7 @@
 <title>AWS Home DB - Containers</title>
 
 <script src="./config.js"></script>
+<script src="./apiClient.js"></script>
 
 <style>
     body {
@@ -234,10 +235,18 @@
 
 <script>
 const API = window.APP_CONFIG.API_BASE_URL;
-const token = localStorage.getItem("authToken");
+// const token = localStorage.getItem("authToken");
 
-if (!token) {
-    window.location.href = "login.html";
+// if (!token) {
+//     window.location.href = "login.html";
+// }
+
+if (!window.APP_CONFIG?.USE_MOCK) {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+        window.location.href = "login.html";
+    }
 }
 
 let containers = [];
@@ -251,20 +260,32 @@ function authHeaders() {
 }
 
 async function loadContainers() {
-    const res = await fetch(`${API}/containers`, {
-        headers: authHeaders()
-    });
+    try {
+        containers = await apiGet("/containers", "mock-containers.json");
 
-    containers = await res.json();
-    renderTable();
+        if (!Array.isArray(containers)) {
+            console.warn("Invalid containers payload:", containers);
+            containers = [];
+        }
+
+        renderTable();
+    } catch (err) {
+        console.error(err);
+        containers = [];
+        renderTable();
+    }
 }
 
 function renderTable() {
     const body = document.getElementById("tableBody");
     body.innerHTML = "";
 
-    containers.forEach(c => {
+    if (!Array.isArray(containers)) {
+        console.warn("renderTable expected array but got:", containers);
+        return;
+    }
 
+    containers.forEach(c => {
         const pk = c.PK;
 
         body.innerHTML += `
@@ -346,11 +367,26 @@ async function save() {
         if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) update.extendedWarrantyFinishDate = extendedWarrantyFinishDate;
         if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
 
-        await fetch(`${API}/containers/${editingId}`, {
-            method: "PUT",
-            headers: authHeaders(),
-            body: JSON.stringify(update)
-        });
+        //
+        //await fetch(`${API}/containers/${editingId}`, {
+        //    method: "PUT",
+        //    headers: authHeaders(),
+        //    body: JSON.stringify(update)
+        //});
+
+        async function loadContainers() {
+        containers = await apiGet(
+            "/containers",
+            "mock-containers.json"
+        );
+
+        if (!Array.isArray(containers)) {
+            console.warn("Invalid container payload:", containers);
+            containers = [];
+        }
+
+        renderTable();
+}
 
     } else {
 
