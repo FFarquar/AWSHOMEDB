@@ -2,27 +2,20 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
+// 🛠️ IMPORT FILE SYSTEM: Required to read the local mock data file
+import fs from 'node:fs';
+import path from 'node:path';
 
 const client = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = process.env.TABLE_NAME;
-// const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me';
-//const AUTH_SECRET = 'AWSHOMEDB-PROD-auth-secret';  this one worked
-// const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
-// const AUTH_SECRET = (process.env.AUTH_SECRET || 'StagingAuthSecretKey2026').trim();
+// Standardize on a fallback secret for local test runners so token signing never breaks locally
+const AUTH_SECRET = (process.env.AUTH_SECRET || 'StagingAuthSecretKey2026').trim();
 
-const AUTH_SECRET = (process.env.AUTH_SECRET || '').trim();
-
-if (!AUTH_SECRET) {
+if (!process.env.AUTH_SECRET && !process.env.USE_MOCK) {
   console.error("❌ CRITICAL INITIALIZATION ERROR: AUTH_SECRET is completely missing from the system environment!");
 }
-
-/**
- * NOTE:
- * CORS is now primarily handled by API Gateway (HTTP API),
- * so we do NOT hardcode Access-Control-Allow-Origin here anymore.
- */
 
 function base64UrlEncode(value) {
   return Buffer.from(value)
@@ -76,9 +69,7 @@ function signToken(payload) {
 export const handler = async (event) => {
   
   try {
-    // HTTP API safe method extraction
-    const method =
-      event.httpMethod || event.requestContext?.http?.method;
+    const method = event.httpMethod || event.requestContext?.http?.method;
 
     if (method !== 'POST') {
       return {
@@ -87,11 +78,7 @@ export const handler = async (event) => {
       };
     }
 
-    const rawBody =
-      typeof event.body === 'string'
-        ? event.body
-        : JSON.stringify(event.body || {});
-
+    const rawBody = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
     const body = rawBody ? JSON.parse(rawBody) : {};
     const loginID = body.loginID;
     const password = body.password;
@@ -103,18 +90,35 @@ export const handler = async (event) => {
       };
     }
 
-    const result = await ddb.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'PK = :pk AND SK = :sk',
-        ExpressionAttributeValues: {
-          ':pk': `USER#${loginID}`,
-          ':sk': 'PROFILE',
-        },
-      })
-    );
+    let user = null;
 
-    const user = result.Items?.[0];
+    // 🛠️ LOCAL MOCK ROUTING CHECK
+    const isLocalMock = !TABLE_NAME || process.env.USE_MOCK  === 'true';
+
+    if (isLocalMock) {
+      console.log("⚠️ LOCAL ENVIRONMENT DETECTED: Fetching from mock-users.json");
+      
+      // Resolve the path to your mock data file inside your repository structure
+      const mockPath = path.resolve(process.cwd(), 'frontend/mockdata/mock-users.json');
+      const rawData = fs.readFileSync(mockPath, 'utf8');
+      const mockUsers = JSON.parse(rawData);
+
+      // Search for the matching user inside your custom schema structure
+      user = mockUsers.find(u => u.loginID === loginID);
+    } else {
+      // Standard Live Production Database Routine
+      const result = await ddb.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'PK = :pk AND SK = :sk',
+          ExpressionAttributeValues: {
+            ':pk': `USER#${loginID}`,
+            ':sk': 'PROFILE',
+          },
+        })
+      );
+      user = result.Items?.[0];
+    }
 
     if (!user || user.active !== true) {
       return {

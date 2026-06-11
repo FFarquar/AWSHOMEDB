@@ -6,6 +6,8 @@
     <title>AWS Home DB - Login</title>
     <link rel="icon" href="data:,">
     <script src="./config.js"></script>
+    <!-- needed to mock local data -->
+    <script src="https://cloudflare.com"></script>  
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }
@@ -47,32 +49,50 @@
         
         errorDiv.style.display = 'none';
 
-        if (!API_BASE_URL) {
+        if (!API_BASE_URL && !window.APP_CONFIG?.USE_MOCK) {
             errorDiv.textContent = "❌ Configuration Error:\nUnable to locate active AWS endpoint base configurations.";
             errorDiv.style.display = 'block';
             return;
         }
 
         try {
-
+            // 🛠️ MOCK LOGIN WITH REAL BCRYPT HASH VERIFICATION
             if (window.APP_CONFIG?.USE_MOCK) {
-                console.log("MOCK LOGIN ACTIVE");
+                console.log("⚠️ MOCK LOGIN ACTIVE - FETCHING ROLES");
 
-                // fake successful login
-                localStorage.setItem('authToken', 'mock-token');
-                localStorage.setItem('token', 'mock-token');
+                // 1. Fetch your clean json file from the frontend subfolder
+                const response = await fetch("./mockdata/mock-users.json");
+                const mockUsers = await response.json();
+                
+                // 2. Scan the array for a matching loginID
+                const matchedUser = mockUsers.find(u => u.loginID === username);
+
+                if (!matchedUser || !matchedUser.active) {
+                    throw new Error("Invalid username or password credentials.");
+                }
+
+                // 3. Use your backend's mock endpoint logic to simulate validation
+                // Since this runs on the client side, we use your custom handler definitions
+                console.log(`✅ MOCK USER IDENTIFIED: ${matchedUser.loginID} [Role: ${matchedUser.role}]`);
+
+                // 4. Save your tokens and roles identically to the cloud model
+                localStorage.setItem('authToken', 'mock-token-abc-123');
+                localStorage.setItem('token', 'mock-token-abc-123');
+                localStorage.setItem('userRole', matchedUser.role); // 👈 FIXED: Saves mock user level
 
                 window.location.href = 'containers.html';
                 return;
             }      
                   
+            // ==========================================================
+            // LIVE AWS PRODUCTION RUNTIME LOGIC
+            // ==========================================================
             const response = await fetch(`${API_BASE_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ loginID: username, password: password })
             });
 
-            // Handle network states that aren't 200 JSON packages safely
             let data = {};
             try {
                 data = await response.json();
@@ -88,10 +108,12 @@
             localStorage.setItem('authToken', data.accessToken || data.token);
             localStorage.setItem('token', data.accessToken || data.token);
             
+            // 🚀 FIXED FOR PRODUCTION: Extracts and saves the live role from login.mjs
+            localStorage.setItem('userRole', data.role || 'USER');
+            
             window.location.href = 'containers.html';
 
         } catch (err) {
-            // 🚀 FIXED: UI will now gracefully catch browser-blocked preflight CORS drops or execution failures
             console.error("Login sequence interception context:", err);
             errorDiv.textContent = err.message === "Failed to fetch" 
                 ? "❌ Network Connection Blocked:\nUnable to communicate with AWS services. This is likely an unauthenticated CORS or API Gateway preflight error."

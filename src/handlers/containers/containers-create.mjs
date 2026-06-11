@@ -10,8 +10,25 @@ const ddb = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME;
 
 export const handler = async (event) => {
-console.log("===== CONTAINERS CREATE =====");
-console.log(JSON.stringify(event, null, 2));
+  console.log("===== CONTAINERS CREATE =====");
+  console.log(JSON.stringify(event, null, 2));
+
+  // 🛠️ SECURITY CHECK: Read authorization context passed from your custom authorizer
+  const authorizerContext = event.requestContext?.authorizer?.lambda || {};
+  const userRole = authorizerContext.role || 'USER';
+
+  if (userRole !== 'ADMIN') {
+    console.log(`❌ SECURITY BLOCK: Unauthorized create attempt by role: ${userRole}`);
+    return {
+      statusCode: 403,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        message: "Forbidden: You must have an ADMIN role to create a container." 
+      })
+    };
+  }
 
   try {
     const body = JSON.parse(event.body);
@@ -51,8 +68,11 @@ console.log(JSON.stringify(event, null, 2));
   } catch (err) {
     console.error(err);
 
+    // Differentiate a conditional check failure (container already exists) from generic errors
+    const statusCode = err.name === "ConditionalCheckFailedException" ? 409 : 500;
+
     return {
-      statusCode: 500,
+      statusCode: statusCode,
       body: JSON.stringify({
         message: err.message,
       }),

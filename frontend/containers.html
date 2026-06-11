@@ -166,7 +166,8 @@
 <div class="container">
 
     <div class="toolbar">
-        <button class="btn-primary" onclick="openCreate()">New Container</button>
+        <!-- 🛠️ UPDATE THIS LINE TO ADD THE ID: -->
+        <button class="btn-primary" id="btnNewContainer" onclick="openCreate()">New Container</button>
         <button class="btn-secondary" onclick="loadContainers()">Refresh</button>
     </div>
 
@@ -178,7 +179,8 @@
                     <th>Purchase Date</th>
                     <th>Price</th>
                     <th>Warranty</th>
-                    <th>Actions</th>
+                    <!-- 🛠️ UPDATE THIS LINE TO ADD THE ID: -->
+                    <th id="thActions">Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -252,6 +254,21 @@ if (!window.APP_CONFIG?.USE_MOCK) {
 let containers = [];
 let editingId = null;
 
+
+const userRole = localStorage.getItem("userRole") || "USER";
+const isAdmin = userRole === "ADMIN";
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (!isAdmin) {
+        const btnNew = document.getElementById("btnNewContainer");
+        if (btnNew) btnNew.style.display = "none";
+        
+        const thActions = document.getElementById("thActions");
+        if (thActions) thActions.style.display = "none";
+    }
+    loadContainers();
+});
+
 function authHeaders() {
     return {
         "Content-Type": "application/json",
@@ -288,6 +305,14 @@ function renderTable() {
     containers.forEach(c => {
         const pk = c.PK;
 
+        // 🛠️ REPLACE THE OLD BUTTON LINE WITH THIS DYNAMIC CHECK:
+        const actionsCell = isAdmin 
+            ? `<td>
+                <button onclick="edit('${pk}')">Edit</button>
+                <button onclick="removeItem('${pk}')">Delete</button>
+               </td>`
+            : "";
+
         body.innerHTML += `
         <tr>
             <td>
@@ -298,13 +323,11 @@ function renderTable() {
             <td>${c.purchaseDate || ""}</td>
             <td>$${c.purchasePrice || 0}</td>
             <td>${c.warrantyFinishDate || ""}</td>
-            <td>
-                <button onclick="edit('${pk}')">Edit</button>
-                <button onclick="removeItem('${pk}')">Delete</button>
-            </td>
+            ${actionsCell} <!-- 🛠️ ADD THIS VARIABLE HERE -->
         </tr>`;
     });
 }
+
 
 function openItems(pk) {
     const id = pk.replace("CONTAINER#", "");
@@ -312,6 +335,7 @@ function openItems(pk) {
 }
 
 function openCreate() {
+    if (!isAdmin) return; // 🛠️ INSERT THIS LINE
     editingId = null;
     document.getElementById("modalTitle").innerText = "Create Container";
     clearForm();
@@ -319,6 +343,7 @@ function openCreate() {
 }
 
 function edit(pk) {
+     if (!isAdmin) return;
     const item = containers.find(x => x.PK === pk);
     editingId = pk;
 
