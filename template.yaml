@@ -347,7 +347,7 @@ Resources:
   # ATTACHMENTS (S3 + Presigned URL)
   # =========================
 
- AttachmentsBucket:
+  AttachmentsBucket:
     Type: AWS::S3::Bucket
     Properties:
       CorsConfiguration:
