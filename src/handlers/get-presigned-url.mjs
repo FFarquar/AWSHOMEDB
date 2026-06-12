@@ -1,19 +1,24 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createRequire } from "module";
+import path from "path";
 
-const s3 = new S3Client({ region: "ap-southeast-2" });
+// 🚀 FORCE NODE TO RESOLVE DEPENDENCIES OUT OF YOUR ROOT SAM DEPLOYMENT PACKAGE
+const require = createRequire(import.meta.url);
+const rootPath = path.resolve(".");
+
+const { S3Client, PutObjectCommand } = require(path.join(rootPath, "node_modules/@aws-sdk/client-s3"));
+const { getSignedUrl } = require(path.join(rootPath, "node_modules/@aws-sdk/s3-request-presigner"));
+
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
 export const handler = async (event) => {
-  console.log("=== RECEIVED PAYLOAD INBOUND EVENT ===", JSON.stringify(event));
+  console.log("=== INBOUND AWS APIGW EVENT WORKSPACE ===", JSON.stringify(event));
 
-  // 1. Move parameter extraction INSIDE the try/catch block 
-  // 2. Add an explicit fallback check to prevent null property selection crashes
   try {
-    const queryParams = event?.queryStringParameters || {};
-    
-    // Fall back to timestamp variations if parameters are completely missing
-    const filename = queryParams.filename || `upload-${Date.now()}.dat`;
+    const s3 = new S3Client({ region: "ap-southeast-2" });
+
+    // Fallback dictionary checks to capture both 1.0 and 2.0 payload mapping versions
+    const queryParams = event.queryStringParameters || {};
+    const filename = queryParams.filename || `asset-${Date.now()}.dat`;
     const contentType = queryParams.contentType || "application/octet-stream";
     
     const s3Key = `attachments/${Date.now()}-${filename}`;
@@ -24,6 +29,7 @@ export const handler = async (event) => {
       ContentType: contentType,
     });
 
+    // Generate secure upload path link
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
     return {
@@ -39,8 +45,10 @@ export const handler = async (event) => {
         fileUrl: `https://${BUCKET_NAME}://{s3Key}`
       }),
     };
+
   } catch (err) {
-    console.error("FATAL RUNTIME EXCEPTION ENCOUNTERED:", err.stack);
+    console.error("❌ CRITICAL UNHANDLED INNER FUNCTION CRASH:", err.stack);
+    
     return {
       statusCode: 500,
       headers: { 
@@ -48,7 +56,7 @@ export const handler = async (event) => {
         "Access-Control-Allow-Origin": "https://github.io" 
       },
       body: JSON.stringify({ 
-        message: "Internal runtime error inside token generation logic.",
+        message: "Internal token build engine processing crash error.",
         error: err.message
       }),
     };
