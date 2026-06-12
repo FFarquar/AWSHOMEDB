@@ -343,6 +343,40 @@ Resources:
         - Key: Application
           Value: AWSHomeDB
 
+  # =========================
+  # ATTACHMENTS (S3 + Presigned URL)
+  # =========================
+
+  AttachmentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-attachments-bucket"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [PUT]
+            AllowedOrigins: ["https://github.io"]
+            MaxAge: 3000
+
+  GetPresignedUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/attachments/get-presigned-url.handler
+      Runtime: nodejs24.x
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref AttachmentsBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AttachmentsBucket
+      Events:
+        GetPresign:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /attachments/presign
+            Method: GET
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"
