@@ -377,10 +377,8 @@ Resources:
             ApiId: !Ref MyServerlessApi
             Path: /attachments/presign
             Method: GET
-    # 🚀 FIX: Add these two lines to correctly compile modern imports
-    Metadata:
-      BuildMethod: esbuild
-      
+
+
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"
