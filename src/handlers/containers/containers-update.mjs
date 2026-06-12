@@ -22,7 +22,6 @@ export const handler = async (event) => {
 
     const body = JSON.parse(event.body || "{}");
     
-    // 🚀 Extract your real payload fields (Excluding PK/SK since they shouldn't change)
     const { 
       name, 
       photoLocation, 
@@ -47,9 +46,11 @@ export const handler = async (event) => {
     const expressionAttributeValues = {};
 
     if (name !== undefined) {
-      updateExpression += " #name = :name,";
+      updateExpression += " #name = :name, #itemName = :itemName,";
       expressionAttributeNames["#name"] = "name";
+      expressionAttributeNames["#itemName"] = "itemName"; // Sync for ItemNameIndex GSI
       expressionAttributeValues[":name"] = name;
+      expressionAttributeValues[":itemName"] = name;
     }
     if (photoLocation !== undefined) {
       updateExpression += " #photoLocation = :photoLocation,";
@@ -61,6 +62,15 @@ export const handler = async (event) => {
       expressionAttributeNames["#purchaseDate"] = "purchaseDate";
       expressionAttributeValues[":purchaseDate"] = purchaseDate;
     }
+    
+    // Sync the WarrantyIndex GSI properties on date changes
+    if (warrantyFinishDate !== undefined || extendedWarrantyFinishDate !== undefined) {
+      const finalWarranty = extendedWarrantyFinishDate || warrantyFinishDate || "1970-01-01";
+      updateExpression += " #warrantyExpiryDate = :warrantyExpiryDate,";
+      expressionAttributeNames["#warrantyExpiryDate"] = "warrantyExpiryDate";
+      expressionAttributeValues[":warrantyExpiryDate"] = finalWarranty;
+    }
+
     if (warrantyFinishDate !== undefined) {
       updateExpression += " #warrantyFinishDate = :warrantyFinishDate,";
       expressionAttributeNames["#warrantyFinishDate"] = "warrantyFinishDate";
@@ -69,7 +79,7 @@ export const handler = async (event) => {
     if (extendedWarrantyFinishDate !== undefined) {
       updateExpression += " #extendedWarrantyFinishDate = :extendedWarrantyFinishDate,";
       expressionAttributeNames["#extendedWarrantyFinishDate"] = "extendedWarrantyFinishDate";
-      expressionAttributeValues[":extendedWarrantyFinishDate"] = extendedWarrantyFinishDate;
+      expressionAttributeValues[":extendedWarrantyFinishDate"] = extendedWarrantyFinishDate || null;
     }
     if (purchasePrice !== undefined) {
       updateExpression += " #purchasePrice = :purchasePrice,";
@@ -84,7 +94,7 @@ export const handler = async (event) => {
       TableName: TABLE_NAME,
       Key: {
         PK: `CONTAINER#${containerId}`,
-        SK: `CONTAINER#${containerId}`
+        SK: "METADATA" // ✨ FIXED: Correctly targets the base data row instead of generating a duplicate
       },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
