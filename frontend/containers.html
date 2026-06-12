@@ -1,267 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AWS Home DB - Containers</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AWS Home DB - Containers & Items</title>
 
-<script src="./config.js"></script>
-<script src="./apiClient.js"></script>
+    <script src="./config.js"></script>
+    <script src="./apiClient.js"></script>
 
-<style>
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
-        margin: 0;
-        background: #f4f6f9;
-    }
-
-    header {
-        background: #232f3e;
-        color: white;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .container {
-        padding: 16px;
-    }
-
-    .toolbar {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-    }
-
-    button {
-        cursor: pointer;
-        border: none;
-        padding: 10px 12px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 14px;
-        min-height: 40px;
-    }
-
-    .btn-primary { background: #ff9900; color: white; }
-    .btn-secondary { background: #555; color: white; }
-
-    /* TABLE WRAPPER → FIXES MOBILE OVERFLOW */
-    .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-        background: white;
-        border-radius: 8px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 700px; /* forces scroll instead of squish */
-    }
-
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        text-align: left;
-        font-size: 14px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: #f0f0f0;
-    }
-
-    tr:hover {
-        background: #fafafa;
-    }
-
-    .link {
-        color: #0073bb;
-        font-weight: 600;
-        cursor: pointer;
-        text-decoration: none;
-    }
-
-    /* MODAL */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4);
-        justify-content: center;
-        align-items: center;
-        padding: 10px;
-    }
-
-    .modal-content {
-        background: white;
-        padding: 18px;
-        width: 100%;
-        max-width: 420px;
-        border-radius: 10px;
-        box-sizing: border-box;
-    }
-
-    .form-group {
-        margin-bottom: 10px;
-    }
-
-    label {
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    input {
-        width: 100%;
-        padding: 10px;
-        margin-top: 4px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        font-size: 14px;
-    }
-
-    .small {
-        font-size: 12px;
-        color: #666;
-        margin-top: 6px;
-        word-break: break-word;
-    }
-
-    .actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 12px;
-    }
-
-    /* MOBILE TWEAKS */
-    @media (max-width: 600px) {
-        th, td {
-            font-size: 13px;
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+            margin: 0;
+            background: #f4f6f9;
         }
 
-        button {
-            width: 100%;
+        header {
+            background: #232f3e;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .container {
+            padding: 16px;
         }
 
         .toolbar {
-            flex-direction: column;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
         }
-    }
-</style>
+
+        button {
+            cursor: pointer;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            min-height: 40px;
+        }
+
+        .btn-primary {
+            background: #ff9900;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4d4d;
+            color: white;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        .link {
+            color: #0073bb;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 18px;
+            width: 100%;
+            max-width: 450px;
+            border-radius: 10px;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 4px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .small {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+            word-break: break-word;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 5px solid #ff9900;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 600px) {
+
+            th,
+            td {
+                font-size: 13px;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<header>
-    <div>AWS Home DB - Containers</div>
-    <button class="btn-secondary" onclick="logout()">Logout</button>
-</header>
+    <header>
+        <div>AWS Home DB - Dashboard</div>
+        <button class="btn-secondary" onclick="logout()">Logout</button>
+    </header>
 
-<div class="container">
+    <div class="container">
 
-    <div class="toolbar">
-        <!-- 🛠️ UPDATE THIS LINE TO ADD THE ID: -->
-        <button class="btn-primary" id="btnNewContainer" onclick="openCreate()">New Container</button>
-        <button class="btn-secondary" onclick="loadContainers()">Refresh</button>
-    </div>
+        <!-- ========================================== -->
+        <!-- PANEL A: MASTER CONTAINERS VIEW PANEL      -->
+        <!-- ========================================== -->
+        <div id="containersPanelView">
+            <div class="toolbar">
+                <button class="btn-primary" id="btnNewContainer" onclick="openCreate()">New Container</button>
+                <button class="btn-secondary" onclick="loadContainers()">Refresh</button>
+            </div>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Purchase Date</th>
-                    <th>Price</th>
-                    <th>Warranty</th>
-                    <!-- 🛠️ UPDATE THIS LINE TO ADD THE ID: -->
-                    <th id="thActions">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-    </div>
-
-</div>
-
-<!-- MODAL -->
-<div class="modal" id="modal">
-    <div class="modal-content">
-
-        <h3 id="modalTitle">Container</h3>
-
-        <div class="form-group">
-            <label>Name</label>
-            <input id="name" />
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Purchase Date</th>
+                            <th>Price</th>
+                            <th>Warranty</th>
+                            <th id="thActions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Photo Location</label>
-            <input id="photoLocation" />
-        </div>
+        <!-- ========================================== -->
+        <!-- PANEL B: NESTED CHILD ITEMS DETAILED PANEL -->
+        <!-- ========================================== -->
+        <div id="itemsPanelView" style="display: none; flex-direction: column; gap: 10px;">
+            <div class="toolbar">
+                <button class="btn-secondary" onclick="closeItemsPanel()">⬅️ Back to Containers</button>
+                <button class="btn-primary" id="btnNewItem" onclick="openItemCreate()">New Item</button>
+            </div>
 
-        <div class="form-group">
-            <label>Purchase Date</label>
-            <input id="purchaseDate" type="date"/>
-        </div>
+            <div class="info-card">
+                <h2 id="summaryContainerName" style="margin:0 0 8px 0;"></h2>
+                <div
+                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:14px;">
+                    <div><strong>Purchase Date:</strong> <span id="summaryPurchaseDate"></span></div>
+                    <div><strong>Purchase Price:</strong> $<span id="summaryPurchasePrice"></span></div>
+                    <div><strong>Warranty Target:</strong> <span id="summaryWarranty"></span></div>
+                </div>
+            </div>
 
-        <div class="form-group">
-            <label>Warranty Finish Date</label>
-            <input id="warrantyFinishDate" type="date"/>
-        </div>
-
-        <div class="form-group">
-            <label>Extended Warranty Finish Date</label>
-            <input id="extendedWarrantyFinishDate" type="date"/>
-        </div>
-
-        <div class="form-group">
-            <label>Purchase Price</label>
-            <input id="purchasePrice" type="number"/>
-        </div>
-
-        <div class="small" id="editHint"></div>
-
-        <div class="actions">
-            <button class="btn-primary" onclick="save()">Save</button>
-            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+            <h3>📦 Embedded Items Matrix List</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Purchased From</th>
+                            <th>Price</th>
+                            <th>Warranty Expiry</th>
+                            <th>Paper Location</th>
+                            <th>Attachments</th>
+                            <th id="thItemActions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody"></tbody>
+                </table>
+            </div>
         </div>
 
     </div>
-</div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: MASTER CONTAINER PROPERTY WINDOW -->
+    <!-- ========================================== -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Container</h3>
+            <div class="form-group"><label>Name</label><input id="name" /></div>
+            <div class="form-group"><label>Photo Location</label><input id="photoLocation" /></div>
+            <div class="form-group"><label>Purchase Date</label><input id="purchaseDate" type="date" /></div>
+            <div class="form-group"><label>Warranty Finish Date</label><input id="warrantyFinishDate" type="date" />
+            </div>
+            <div class="form-group"><label>Extended Warranty Finish Date</label><input id="extendedWarrantyFinishDate"
+                    type="date" /></div>
+            <div class="form-group"><label>Purchase Price</label><input id="purchasePrice" type="number" /></div>
+            <div class="small" id="editHint"></div>
+            <div class="actions">
+                <button class="btn-primary" onclick="save()">Save</button>
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: NESTED CHILD ITEM PROPERTY WINDOW -->
+    <!-- ========================================== -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <h3 id="itemModalTitle">Item</h3>
+
+            <div class="form-group"><label>Item Name *</label><input id="itemName" /></div>
+            <div class="form-group"><label>Category</label><input id="itemCategory" /></div>
+            <div class="form-group"><label>Purchased From</label><input id="itemPurchasedFrom" /></div>
+            <div class="form-group"><label>Purchase Price ($)</label><input id="itemPurchasePrice" type="number" />
+            </div>
+            <div class="form-group"><label>Purchase Date</label><input id="itemPurchaseDate" type="date" /></div>
+            <div class="form-group"><label>Warranty Expiry Date</label><input id="itemWarrantyExpiryDate" type="date" />
+            </div>
+            <div class="form-group"><label>Physical Paper Storage Location</label><input id="itemPhysicalLocation" />
+            </div>
+
+            <!-- 📎 MULTI-FILE ATTACHMENTS MANAGER SUB-LAYOUT -->
+            <div style="border-top:1px dashed #ccc; padding-top:10px; margin-top:15px;">
+                <label><strong>Attachments Collection</strong></label>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <input id="attLabel" placeholder="Receipt, Manual..."
+                        style="flex:2; padding:6px; font-size:12px;" />
+                    <input id="attUrl" placeholder="S3 URL path Link..." style="flex:3; padding:6px; font-size:12px;" />
+                    <button type="button" onclick="addAttachmentToState()"
+                        style="min-height:30px; padding:0 10px;">Add</button>
+                </div>
+                <ul id="modalAttachmentList"
+                    style="padding-left:20px; font-size:13px; margin-top:8px; max-height:100px; overflow-y:auto;"></ul>
+            </div>
+
+            <div class="actions">
+                <button class="btn-primary" onclick="saveItem()">Save Item</button>
+                <button class="btn-secondary" onclick="closeItemModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CUSTOM DELETION CONFIRMATION MODAL         -->
+    <!-- ========================================== -->
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content" style="max-width: 360px; text-align: center;">
+            <h3 style="margin-top: 0; color: #ff4d4d;">⚠️ Confirm Deletion</h3>
+            <p id="deleteModalMessage" style="font-size: 14px; margin-bottom: 20px;">Are you sure you want to delete this record?</p>
+            
+            <div class="actions" style="justify-content: center;">
+                <button id="btnConfirmDelete" class="btn-danger" style="flex: 1;">Yes, Delete</button>
+                <button class="btn-secondary" onclick="closeDeleteModal()" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
 <script>
-    // 🛠️ DELETE YOUR OLD SCRIPT TAG CONTENTS AND PASTE THIS INSTEAD:
     const API = window.APP_CONFIG.API_BASE_URL;
-
     let token = localStorage.getItem("authToken");
 
     if (!window.APP_CONFIG?.USE_MOCK) {
-        if (!token) {
-            window.location.href = "login.html";
-        }
+        if (!token) window.location.href = "login.html";
     } else {
         token = "local-mock-token-xyz";
     }
 
+    // --- GLOBAL RUNTIME VARIABLES STATE CACHES ---
+
     let containers = [];
-    let editingId = null;
+    let childItems = [];
+    let currentItemAttachments = [];
+    let items = []; // Holds items in local mock mode
+    
+    let editingId = null;       // Tracks primary container PK edits
+    let editingItemId = null;   // Tracks child item ID edits
+    let activeShortContainerId = null; // Tracks active parent container (short form ID)
 
     const userRole = localStorage.getItem("userRole") || "USER";
-    const isAdmin = userRole === "ADMIN";
+    
+    // 🔐 NEW PERMISSION STRUCTURE
+    const isAdmin = userRole === "ADMIN";                                 // Container access
+    const canManageItems = userRole === "ADMIN" || userRole === "USER";   // Item access (Full USER + ADMIN)
 
     document.addEventListener("DOMContentLoaded", () => {
+        // 1. Lock down Container actions if not an Admin
         if (!isAdmin) {
             const btnNew = document.getElementById("btnNewContainer");
             if (btnNew) btnNew.style.display = "none";
-            
             const thActions = document.getElementById("thActions");
             if (thActions) thActions.style.display = "none";
+        }
+        
+        // 2. Lock down Item actions ONLY if they lack item permissions (e.g. GUEST)
+        if (!canManageItems) {
+            const btnNewI = document.getElementById("btnNewItem");
+            if (btnNewI) btnNewI.style.display = "none";
+            const thItemActions = document.getElementById("thItemActions");
+            if (thItemActions) thItemActions.style.display = "none";
         }
         loadContainers();
     });
@@ -272,19 +388,22 @@
             "Authorization": `Bearer ${token}`
         };
     }
-
+ // ==========================================
+    // SECTION 1: CONTAINERS LOGIC METHODS
+    // ==========================================
     async function loadContainers() {
         try {
+            // ✨ FIXED: Pulls straight from your apiClient file wrapper with zero hardcoded references
             containers = await apiGet("/containers", "mock-containers.json");
-
+            
             if (!Array.isArray(containers)) {
-                console.warn("Invalid containers payload:", containers);
+                console.warn("⚠️ Warning: mock-containers.json data format is missing or invalid.");
                 containers = [];
             }
-
+            
             renderTable();
         } catch (err) {
-            console.error(err);
+            console.error("💥 Failed to read local container mock files:", err);
             containers = [];
             renderTable();
         }
@@ -292,41 +411,40 @@
 
     function renderTable() {
         const body = document.getElementById("tableBody");
+        if (!body) return;
         body.innerHTML = "";
-
-        if (!Array.isArray(containers)) {
-            console.warn("renderTable expected array but got:", containers);
-            return;
-        }
 
         containers.forEach(c => {
             const pk = c.PK;
+            const shortId = (c.containerId || pk.replace("CONTAINER#", "")).trim().toUpperCase();
 
             const actionsCell = isAdmin 
                 ? `<td>
-                    <button onclick="edit('${pk}')">Edit</button>
-                    <button onclick="removeItem('${pk}')">Delete</button>
+                    <button onclick="edit('${pk}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Edit</button>
+                    <button onclick="removeItem('${pk}')" class="btn-danger" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Delete</button>
                 </td>`
                 : "";
 
-            body.innerHTML += `
-            <tr>
-                <td>
-                    <span class="link" onclick="openItems('${pk}')">
-                        ${c.name}
-                    </span>
-                </td>
-                <td>${c.purchaseDate || ""}</td>
-                <td>$${c.purchasePrice || 0}</td>
-                <td>${c.warrantyFinishDate || ""}</td>
-                ${actionsCell}
-            </tr>`;
-        });
-    }
+            const row = document.createElement("tr");
+            row.style.cursor = "pointer";
 
-    function openItems(pk) {
-        const id = pk.replace("CONTAINER#", "");
-        window.location.href = `items.html?containerId=${id}`;
+            row.innerHTML = `
+                <td><strong>${c.name}</strong></td>
+                <td>${c.purchaseDate || ""}</td>
+                <td>$${Number(c.purchasePrice || 0).toLocaleString()}</td>
+                <td>${c.extendedWarrantyFinishDate || c.warrantyFinishDate || ""}</td>
+                ${actionsCell}
+            `;
+
+            row.addEventListener("click", (event) => {
+                if (event.target.tagName === "BUTTON" || (event.target.closest("td") && event.target.closest("td").nextElementSibling === null && isAdmin)) {
+                    return; 
+                }
+                openItems(pk, shortId);
+            });
+
+            body.appendChild(row);
+        });
     }
 
     function openCreate() {
@@ -343,7 +461,6 @@
         editingId = pk;
 
         document.getElementById("modalTitle").innerText = "Edit Container";
-
         document.getElementById("name").value = item.name || "";
         document.getElementById("photoLocation").value = item.photoLocation || "";
         document.getElementById("purchaseDate").value = item.purchaseDate || "";
@@ -355,143 +472,426 @@
         document.getElementById("modal").style.display = "flex";
     }
 
-async function save() {
-    if (!isAdmin) return alert("Unauthorized action.");
+     async function save() {
+        if (!isAdmin) return alert("Unauthorized action.");
 
-    const name = document.getElementById("name").value.trim();
-    const photoLocation = document.getElementById("photoLocation").value.trim();
-    const purchaseDate = document.getElementById("purchaseDate").value;
-    const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
-    const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
-    const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
+        const name = document.getElementById("name").value.trim();
+        const photoLocation = document.getElementById("photoLocation").value.trim();
+        const purchaseDate = document.getElementById("purchaseDate").value;
+        const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
+        const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
+        const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
 
-    if (!name) return alert("Name required");
+        if (!name) return alert("Name required");
 
-    const id = "CONTAINER" + Date.now();
-    const pk = editingId || `CONTAINER#${id}`;
+        const id = "CONTAINER" + Date.now();
+        const pk = editingId || `CONTAINER#${id}`;
+        const finalWarranty = extendedWarrantyFinishDate || warrantyFinishDate || "1970-01-01";
 
-    // --- AWS DYNAMODB COMPLIANCE TRANSFORMS ---
-    // 1. Fallback for the Warranty GSI Range Key (cannot be null/empty string)
-    const finalWarranty = extendedWarrantyFinishDate || warrantyFinishDate || "1970-01-01";
+        const containerPayload = {
+            PK: pk,
+            SK: "METADATA",
+            containerId: editingId ? editingId.replace("CONTAINER#", "") : id,
+            name,
+            photoLocation,
+            purchaseDate,
+            warrantyFinishDate,
+            extendedWarrantyFinishDate: extendedWarrantyFinishDate || null,
+            purchasePrice,
+            entityType: "CONTAINER",
+            itemName: name,
+            warrantyExpiryDate: finalWarranty,
+            category: "General",
+            purchasedFrom: "Unknown"
+        };
 
-    const containerPayload = {
-        PK: pk,
-        SK: "METADATA",
-        containerId: editingId ? editingId.replace("CONTAINER#", "") : id,
-        name,
-        photoLocation,
-        purchaseDate,
-        warrantyFinishDate,
-        extendedWarrantyFinishDate: extendedWarrantyFinishDate || null, // UI state safe
-        purchasePrice,
-
-        // 2. Map frontend state directly to GSI attributes defined in CloudFormation
-        entityType: "CONTAINER",               // Matches WarrantyIndex Partition Key
-        itemName: name,                        // Matches ItemNameIndex Partition Key
-        warrantyExpiryDate: finalWarranty,     // Matches WarrantyIndex Range Key
-        category: "General",                   // Matches CategoryIndex Partition Key (Defaulted)
-        purchasedFrom: "Unknown"               // Matches PurchasedFromIndex Partition Key (Defaulted)
-    };
-
-    if (window.APP_CONFIG?.USE_MOCK) {
-        console.log("⚠️ MOCK MODE SAVE INTERCEPTED", containerPayload);
-        if (editingId) {
-            const index = containers.findIndex(c => c.PK === editingId);
-            if (index !== -1) containers[index] = containerPayload;
-        } else {
-            containers.push(containerPayload);
-        }
-        renderTable();
-        closeModal();
-        return; 
-    }
-
-    try {
-        if (editingId) {
-            const cleanId = editingId.replace("CONTAINER#", "");
-            const original = containers.find(c => c.PK === editingId);
-            const update = {};
-
-            // Keep base fields synced
-            if (name !== original.name) {
-                update.name = name;
-                update.itemName = name; // Sync GSI key string
-            }
-            if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
-            if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
-            if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
-            if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) {
-                update.extendedWarrantyFinishDate = extendedWarrantyFinishDate || null;
-                update.warrantyExpiryDate = finalWarranty; // Sync GSI key string
-            }
-            if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
-
-            await fetch(`${API}/containers/${cleanId}`, {
-                method: "PUT",
-                headers: authHeaders(),
-                body: JSON.stringify(update)
-            });
-        } else {
-            await fetch(`${API}/containers`, {
-                method: "POST",
-                headers: authHeaders(),
-                body: JSON.stringify(containerPayload)
-            });
-        }
-        closeModal();
-        await loadContainers();
-    } catch (err) {
-        console.error("AWS Communication Failure:", err);
-        alert(`Failed to execute network transaction: ${err.message}`);
-    }
-}
-
-    // function removeItem(pk) {
-    //     if (!isAdmin) return;
-    //     if (confirm("Are you sure you want to delete this container?")) {
-    //         if (window.APP_CONFIG?.USE_MOCK) {
-    //             containers = containers.filter(c => c.PK !== pk);
-    //             renderTable();
-    //             return;
-    //         }
-    //         console.log("Delete cloud path requested for:", pk);
-    //     }
-    // }
-
-    async function removeItem(pk) {
-    if (!isAdmin) return;
-    
-    if (confirm("Are you sure you want to delete this container?")) {
-        // Local mock mode logic
         if (window.APP_CONFIG?.USE_MOCK) {
+            if (editingId) {
+                // ✨ FIXED: Target "containers" instead of "localMockContainers"
+                const index = containers.findIndex(c => c.PK === editingId);
+                if (index !== -1) containers[index] = containerPayload;
+            } else {
+                // ✨ FIXED: Target "containers" instead of "localMockContainers"
+                containers.push(containerPayload);
+            }
+            renderTable();
+            closeModal();
+            return; 
+        }
+
+        try {
+            if (editingId) {
+                const cleanId = editingId.replace("CONTAINER#", "");
+                const update = {
+                    name, itemName: name, photoLocation, purchaseDate,
+                    warrantyFinishDate, extendedWarrantyFinishDate: extendedWarrantyFinishDate || null,
+                    purchasePrice, warrantyExpiryDate: finalWarranty
+                };
+                await fetch(`${API}/containers/${cleanId}`, {
+                    method: "PUT",
+                    headers: authHeaders(),
+                    body: JSON.stringify(update)
+                });
+            } else {
+                await fetch(`${API}/containers`, {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify(containerPayload)
+                });
+            }
+            closeModal();
+            await loadContainers();
+        } catch (err) {
+            alert(`Failed network transaction: ${err.message}`);
+        }
+    }
+
+    // ✨ PASTE DESTINATION LOCATION: Deletion intercepts and execution targets live here
+    function removeItem(pk) {
+        if (!isAdmin) return;
+        const target = containers.find(c => c.PK === pk);
+        const name = target ? target.name : "This Container";
+        openDeleteModal("CONTAINER", pk, name);
+    }
+
+    function deleteChildItem(itemId) {
+        if (!canManageItems) return;
+        const target = childItems.find(i => i.itemId === itemId);
+        const name = target ? target.itemName : "This Item";
+        openDeleteModal("ITEM", itemId, name);
+    }
+
+    async function finalizeContainerDelete(pk) {
+        if (window.APP_CONFIG?.USE_MOCK) {
+            // ✨ FIXED: Target "containers" array memory directly
             containers = containers.filter(c => c.PK !== pk);
             renderTable();
             return;
         }
         
-        // Cloud backend logic aligned with your API pattern
         try {
-            // Sends the DELETE request to your backend endpoint (e.g., API/containers/123)
-            const response = await fetch(`${API}/containers/${pk}`, {
+            const cleanId = pk.replace("CONTAINER#", "");
+            const response = await fetch(`${API}/containers/${cleanId}`, {
                 method: "DELETE",
                 headers: authHeaders()
             });
-
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
-            }
-
-            // Successfully deleted on server -> update local state and UI
-            containers = containers.filter(c => c.PK !== pk);
-            renderTable();
-
+            if (!response.ok) throw new Error(`Status: ${response.status}`);
+            await loadContainers();
         } catch (error) {
-            console.error("Cloud delete failed:", error);
-            alert("Failed to delete the container from the cloud. Please try again.");
+            alert("Failed to delete the container from the cloud.");
         }
     }
-}
 
+
+     // ==========================================
+    // SECTION 2: NESTED ITEMS LAYOUT METHODS
+    // ==========================================
+    async function openItems(pk, shortId) {
+        // ✨ FIXED: Automatically strips the prefix to guarantee clean short string matches ("CONTAINER2")
+        const cleanShortId = (shortId || pk || "").replace("CONTAINER#", "");
+        
+        activeShortContainerId = cleanShortId;
+        console.log(`📂 openItems triggered. Sanitized shortId to match items: [${cleanShortId}]`);
+
+        // Safely check if the container list cache exists in active memory
+        if (!Array.isArray(containers)) containers = [];
+        
+        const containerObj = containers.find(c => c.PK === pk || (c.containerId || "").replace("CONTAINER#", "") === cleanShortId);
+
+        // Render dashboard header card labels with safe fallbacks
+        document.getElementById("summaryContainerName").innerText = containerObj ? containerObj.name : cleanShortId;
+        document.getElementById("summaryPurchaseDate").innerText = containerObj?.purchaseDate || "N/A";
+        document.getElementById("summaryPurchasePrice").innerText = Number(containerObj?.purchasePrice || 0).toLocaleString();
+        document.getElementById("summaryWarranty").innerText = containerObj?.extendedWarrantyFinishDate || containerObj?.warrantyFinishDate || "N/A";
+
+        // View panel display visibility toggles
+        document.getElementById("containersPanelView").style.display = "none";
+        document.getElementById("itemsPanelView").style.display = "flex";
+
+        await loadItems();
+    }
+
+    function closeItemsPanel() {
+        activeShortContainerId = null;
+        document.getElementById("itemsPanelView").style.display = "none";
+        document.getElementById("containersPanelView").style.display = "block";
+    }
+
+     async function loadItems() {
+        const tbody = document.getElementById("itemsTableBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="8">Searching for child records...</td></tr>`;
+
+        if (window.APP_CONFIG?.USE_MOCK) {
+            console.log("ℹ️ Fetching mock items collection utilizing apiClient wrapper channels...");
+            try {
+                const allMockItems = await apiGet(`/containers/${activeShortContainerId}/items`, "mock-items.json");
+                
+                // Ensure active comparison string is sanitized to lowercase
+                const targetContainerId = (activeShortContainerId || "").toLowerCase();
+
+                // ✨ FIXED: Converts both IDs to lowercase to bypass casing mismatch bugs completely
+                childItems = Array.isArray(allMockItems) 
+                    ? allMockItems.filter(i => (i.containerId || "").toLowerCase() === targetContainerId) 
+                    : [];
+                    
+                console.log(`📊 Filtered results for [${targetContainerId}]: Found ${childItems.length} items.`);
+            } catch (err) {
+                console.error("💥 Mock Item File Read Aborted:", err);
+                tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Mock Data Error: ${err.message}</td></tr>`;
+                return;
+            }
+        } else {
+            // Standard Live Cloud Production Network Pathway
+            try {
+                const res = await fetch(`${API}/containers/${activeShortContainerId}/items`, {
+                    method: "GET",
+                    headers: authHeaders()
+                });
+                if (!res.ok) throw new Error(`Error Status: ${res.status}`);
+                childItems = await res.json();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Error fetching child collection: ${err.message}</td></tr>`;
+                return;
+            }
+        }
+        renderItemsTable();
+    }
+
+    function renderItemsTable() {
+        const tbody = document.getElementById("itemsTableBody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        if (childItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8">No items stored in this container segment room.</td></tr>`;
+            return;
+        }
+
+        childItems.forEach(item => {
+            let linksHtml = "None";
+            if (item.attachments && item.attachments.length > 0) {
+                linksHtml = item.attachments.map(a => `<a href="${a.s3Url}" target="_blank">📎 ${a.label}</a>`).join("<br>");
+            }
+
+            // ✨ FIXED: Made Item Edit button exactly the same height layout as the Delete button
+            const actions = canManageItems 
+                ? `<td>
+                    <button onclick="openItemEdit('${item.itemId}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Edit</button>
+                    <button class="btn-danger" onclick="deleteChildItem('${item.itemId}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Delete</button>
+                   </td>`
+                : "";
+
+            tbody.innerHTML += `
+            <tr>
+                <td><strong>${item.itemName || "Unnamed Asset"}</strong></td>
+                <td>${item.category || "General"}</td>
+                <td>${item.purchasedFrom || "Unknown"}</td>
+                <td>$${Number(item.purchasePrice || 0).toLocaleString()}</td>
+                <td>${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : item.warrantyExpiryDate}</td>
+                <td>${item.physicalPaperStorageLocation || "N/A"}</td>
+                <td>${linksHtml}</td>
+                ${actions}
+            </tr>`;
+        });
+    }
+
+     function openItemCreate() {
+        if (!canManageItems) return; // ✨ FIXED
+        editingItemId = null;
+        currentItemAttachments = [];
+        document.getElementById("itemModalTitle").innerText = "Add New Item Asset";
+        clearItemForm();
+        renderModalAttachments();
+        document.getElementById("itemModal").style.display = "flex";
+    }
+
+    function openItemEdit(itemId) {
+        if (!canManageItems) return; // ✨ FIXED
+        editingItemId = itemId;
+        const target = childItems.find(i => i.itemId === itemId);
+        document.getElementById("itemModalTitle").innerText = "Modify Item Properties";
+
+        document.getElementById("itemName").value = target.itemName || "";
+        document.getElementById("itemCategory").value = target.category || "";
+        document.getElementById("itemPurchasedFrom").value = target.purchasedFrom || "";
+        document.getElementById("itemPurchasePrice").value = target.purchasePrice || 0;
+        document.getElementById("itemPurchaseDate").value = target.purchaseDate || "";
+        document.getElementById("itemWarrantyExpiryDate").value = target.warrantyExpiryDate === "1970-01-01" ? "" : target.warrantyExpiryDate;
+        document.getElementById("itemPhysicalLocation").value = target.physicalPaperStorageLocation || "";
+        
+        currentItemAttachments = target.attachments ? [...target.attachments] : [];
+        renderModalAttachments();
+        document.getElementById("itemModal").style.display = "flex";
+    }
+
+    function closeItemModal() {
+        document.getElementById("itemModal").style.display = "none";
+        editingItemId = null;
+        clearItemForm();
+    }
+
+    function clearItemForm() {
+        ["itemName","itemCategory","itemPurchasedFrom","itemPurchasePrice","itemPurchaseDate","itemWarrantyExpiryDate","itemPhysicalLocation","attLabel","attUrl"]
+        .forEach(id => document.getElementById(id).value = "");
+    }
+
+    function addAttachmentToState() {
+        const lbl = document.getElementById("attLabel").value.trim();
+        const url = document.getElementById("attUrl").value.trim();
+        if (!lbl || !url) return alert("Label and absolute path URL strings required.");
+
+        currentItemAttachments.push({
+            attachmentId: "ATT#" + Date.now(),
+            entityType: "ATTACHMENT",
+            label: lbl,
+            s3Url: url,
+            fileType: url.endsWith(".pdf") ? "application/pdf" : "image/jpeg",
+            uploadedDate: new Date().toISOString()
+        });
+
+        document.getElementById("attLabel").value = "";
+        document.getElementById("attUrl").value = "";
+        renderModalAttachments();
+    }
+
+    function removeAttachmentFromState(idx) {
+        currentItemAttachments.splice(idx, 1);
+        renderModalAttachments();
+    }
+
+    function renderModalAttachments() {
+        const list = document.getElementById("modalAttachmentList");
+        if (!list) return;
+        list.innerHTML = "";
+        currentItemAttachments.forEach((a, i) => {
+            const li = document.createElement("li");
+            li.style.cssText = "display:flex; justify-content:space-between; margin-bottom:4px;";
+            li.innerHTML = `
+                <a href="${a.s3Url}" target="_blank">${a.label}</a>
+                <button type="button" onclick="removeAttachmentFromState(${i})" style="min-height:20px; height:20px; padding:0 6px; background:red; color:white; font-size:11px;">X</button>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    async function saveItem() {
+        if (!canManageItems) return alert("Action restricted."); // ✨ FIXED
+        const nameVal = document.getElementById("itemName").value.trim();
+        if (!nameVal) return alert("Item Name is mandatory.");
+
+        const payload = {
+            itemName: nameVal,
+            category: document.getElementById("itemCategory").value.trim() || "General",
+            purchasedFrom: document.getElementById("itemPurchasedFrom").value.trim() || "Unknown",
+            purchasePrice: Number(document.getElementById("itemPurchasePrice").value) || 0,
+            purchaseDate: document.getElementById("itemPurchaseDate").value || null,
+            warrantyExpiryDate: document.getElementById("itemWarrantyExpiryDate").value || "1970-01-01",
+            physicalPaperStorageLocation: document.getElementById("itemPhysicalLocation").value.trim(),
+            attachments: currentItemAttachments
+        };
+
+        if (window.APP_CONFIG?.USE_MOCK) {
+            if (editingItemId) {
+                const idx = localMockItems.findIndex(i => i.itemId === editingItemId && i.containerId === activeShortContainerId);
+                if (idx !== -1) Object.assign(localMockItems[idx], payload);
+            } else {
+                const generatedId = "ITEM" + Date.now();
+                localMockItems.push({
+                    PK: `CONTAINER#${activeShortContainerId}`,
+                    SK: `ITEM#${generatedId}`,
+                    entityType: "ITEM",
+                    containerId: activeShortContainerId,
+                    itemId: generatedId,
+                    createdDate: new Date().toISOString().split('T'),
+                    ...payload
+                });
+            }
+            closeItemModal();
+            loadItems();
+            return;
+        }
+
+        try {
+            let path = `${API}/containers/${activeShortContainerId}/items`;
+            let method = "POST";
+            if (editingItemId) {
+                path += `/${editingItemId}`;
+                method = "PUT";
+            }
+
+            const response = await fetch(path, {
+                method,
+                headers: authHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`Rejection status: ${response.status}`);
+
+            closeItemModal();
+            await loadItems();
+        } catch (error) {
+            alert(`Save lifecycle failed: ${error.message}`);
+        }
+    }
+
+    async function finalizeItemDelete(itemId) {
+        if (window.APP_CONFIG?.USE_MOCK) {
+            childItems = childItems.filter(i => i.itemId !== itemId);
+            renderItemsTable();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/containers/${activeShortContainerId}/items/${itemId}`, {
+                method: "DELETE",
+                headers: authHeaders()
+            });
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+            await loadItems();
+        } catch (err) {
+            alert(`Delete transaction failure: ${err.message}`);
+        }
+    }
+
+    // ==========================================
+    // SECTION 3: SYSTEM UTILITIES METHODS
+    // ==========================================
+    
+    // ✨ PASTE DESTINATION LOCATION: Global deletion state variables and helpers sit here
+    let deleteTargetType = null; 
+    let deleteTargetId = null;   
+
+    function openDeleteModal(type, id, displayName) {
+        deleteTargetType = type;
+        deleteTargetId = id;
+        
+        const messageElement = document.getElementById("deleteModalMessage");
+        messageElement.innerHTML = `Are you sure you want to permanently purge <br><strong>"${displayName}"</strong>?`;
+        
+        document.getElementById("btnConfirmDelete").onclick = executeSystemDelete;
+        document.getElementById("deleteConfirmModal").style.display = "flex";
+    }
+
+    function closeDeleteModal() {
+        document.getElementById("deleteConfirmModal").style.display = "none";
+        deleteTargetType = null;
+        deleteTargetId = null;
+    }
+
+    async function executeSystemDelete() {
+        const targetId = deleteTargetId;
+        const targetType = deleteTargetType;
+        
+        closeDeleteModal(); 
+
+        if (targetType === "CONTAINER") {
+            await finalizeContainerDelete(targetId);
+        } else if (targetType === "ITEM") {
+            await finalizeItemDelete(targetId);
+        }
+    }
+
+    // Existing utility functions remain below intact
     function clearForm() {
         ["name","photoLocation","purchaseDate","warrantyFinishDate","extendedWarrantyFinishDate","purchasePrice"]
         .forEach(id => document.getElementById(id).value = "");
@@ -508,7 +908,6 @@ async function save() {
         localStorage.clear();
         window.location.href = "login.html";
     }
-
 </script>
 
 </body>
