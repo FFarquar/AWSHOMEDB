@@ -355,78 +355,96 @@
         document.getElementById("modal").style.display = "flex";
     }
 
-    async function save() {
-        if (!isAdmin) return alert("Unauthorized action.");
+async function save() {
+    if (!isAdmin) return alert("Unauthorized action.");
 
-        const name = document.getElementById("name").value.trim();
-        const photoLocation = document.getElementById("photoLocation").value.trim();
-        const purchaseDate = document.getElementById("purchaseDate").value;
-        const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
-        const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
-        const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
+    const name = document.getElementById("name").value.trim();
+    const photoLocation = document.getElementById("photoLocation").value.trim();
+    const purchaseDate = document.getElementById("purchaseDate").value;
+    const warrantyFinishDate = document.getElementById("warrantyFinishDate").value;
+    const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
+    const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
 
-        if (!name) return alert("Name required");
+    if (!name) return alert("Name required");
 
-        const id = "CONTAINER" + Date.now();
-        const pk = editingId || `CONTAINER#${id}`;
+    const id = "CONTAINER" + Date.now();
+    const pk = editingId || `CONTAINER#${id}`;
 
-        const containerPayload = {
-            PK: pk,
-            SK: "METADATA",
-            containerId: editingId ? editingId.replace("CONTAINER#", "") : id,
-            name,
-            photoLocation,
-            purchaseDate,
-            warrantyFinishDate,
-            extendedWarrantyFinishDate,
-            purchasePrice
-        };
+    // --- AWS DYNAMODB COMPLIANCE TRANSFORMS ---
+    // 1. Fallback for the Warranty GSI Range Key (cannot be null/empty string)
+    const finalWarranty = extendedWarrantyFinishDate || warrantyFinishDate || "1970-01-01";
 
-        if (window.APP_CONFIG?.USE_MOCK) {
-            console.log("⚠️ MOCK MODE SAVE INTERCEPTED");
-            if (editingId) {
-                const index = containers.findIndex(c => c.PK === editingId);
-                if (index !== -1) containers[index] = containerPayload;
-            } else {
-                containers.push(containerPayload);
-            }
-            renderTable();
-            closeModal();
-            return; 
+    const containerPayload = {
+        PK: pk,
+        SK: "METADATA",
+        containerId: editingId ? editingId.replace("CONTAINER#", "") : id,
+        name,
+        photoLocation,
+        purchaseDate,
+        warrantyFinishDate,
+        extendedWarrantyFinishDate: extendedWarrantyFinishDate || null, // UI state safe
+        purchasePrice,
+
+        // 2. Map frontend state directly to GSI attributes defined in CloudFormation
+        entityType: "CONTAINER",               // Matches WarrantyIndex Partition Key
+        itemName: name,                        // Matches ItemNameIndex Partition Key
+        warrantyExpiryDate: finalWarranty,     // Matches WarrantyIndex Range Key
+        category: "General",                   // Matches CategoryIndex Partition Key (Defaulted)
+        purchasedFrom: "Unknown"               // Matches PurchasedFromIndex Partition Key (Defaulted)
+    };
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        console.log("⚠️ MOCK MODE SAVE INTERCEPTED", containerPayload);
+        if (editingId) {
+            const index = containers.findIndex(c => c.PK === editingId);
+            if (index !== -1) containers[index] = containerPayload;
+        } else {
+            containers.push(containerPayload);
         }
-
-        try {
-            if (editingId) {
-                const cleanId = editingId.replace("CONTAINER#", "");
-                const original = containers.find(c => c.PK === editingId);
-                const update = {};
-
-                if (name !== original.name) update.name = name;
-                if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
-                if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
-                if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
-                if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) update.extendedWarrantyFinishDate = extendedWarrantyFinishDate;
-                if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
-
-                await fetch(`${API}/containers/${cleanId}`, {
-                    method: "PUT",
-                    headers: authHeaders(),
-                    body: JSON.stringify(update)
-                });
-            } else {
-                await fetch(`${API}/containers`, {
-                    method: "POST",
-                    headers: authHeaders(),
-                    body: JSON.stringify(containerPayload)
-                });
-            }
-            closeModal();
-            await loadContainers();
-        } catch (err) {
-            console.error("AWS Communication Failure:", err);
-            alert(`Failed to execute network transaction: ${err.message}`);
-        }
+        renderTable();
+        closeModal();
+        return; 
     }
+
+    try {
+        if (editingId) {
+            const cleanId = editingId.replace("CONTAINER#", "");
+            const original = containers.find(c => c.PK === editingId);
+            const update = {};
+
+            // Keep base fields synced
+            if (name !== original.name) {
+                update.name = name;
+                update.itemName = name; // Sync GSI key string
+            }
+            if (photoLocation !== original.photoLocation) update.photoLocation = photoLocation;
+            if (purchaseDate !== original.purchaseDate) update.purchaseDate = purchaseDate;
+            if (warrantyFinishDate !== original.warrantyFinishDate) update.warrantyFinishDate = warrantyFinishDate;
+            if (extendedWarrantyFinishDate !== original.extendedWarrantyFinishDate) {
+                update.extendedWarrantyFinishDate = extendedWarrantyFinishDate || null;
+                update.warrantyExpiryDate = finalWarranty; // Sync GSI key string
+            }
+            if (purchasePrice !== original.purchasePrice) update.purchasePrice = purchasePrice;
+
+            await fetch(`${API}/containers/${cleanId}`, {
+                method: "PUT",
+                headers: authHeaders(),
+                body: JSON.stringify(update)
+            });
+        } else {
+            await fetch(`${API}/containers`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify(containerPayload)
+            });
+        }
+        closeModal();
+        await loadContainers();
+    } catch (err) {
+        console.error("AWS Communication Failure:", err);
+        alert(`Failed to execute network transaction: ${err.message}`);
+    }
+}
 
     // function removeItem(pk) {
     //     if (!isAdmin) return;
