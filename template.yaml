@@ -353,8 +353,8 @@ Resources:
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ["*"]
-            AllowedMethods: ["PUT", "OPTIONS"]
-            AllowedOrigins: ["https://github.io"]
+            AllowedMethods: ["PUT"]
+            AllowedOrigins: ["https://ffarquar.github.io"]
             MaxAge: 3000
 
   GetPresignedUrlFunction:
