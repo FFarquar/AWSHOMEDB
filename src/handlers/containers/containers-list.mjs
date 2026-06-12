@@ -35,9 +35,10 @@ export const handler = async (event) => {
     const result = await ddb.send(
       new ScanCommand({
         TableName: TABLE_NAME,
-        FilterExpression: "begins_with(PK, :prefix)",
+        // 👇 Change this line to look for METADATA rows only
+        FilterExpression: "SK = :sk",
         ExpressionAttributeValues: {
-          ":prefix": "CONTAINER#",
+          ":sk": "METADATA",
         },
       })
     );
