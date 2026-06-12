@@ -1,15 +1,21 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const s3 = new S3Client({});
+const s3 = new S3Client({ region: "ap-southeast-2" });
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
 export const handler = async (event) => {
+  console.log("=== RECEIVED PAYLOAD INBOUND EVENT ===", JSON.stringify(event));
+
+  // 1. Move parameter extraction INSIDE the try/catch block 
+  // 2. Add an explicit fallback check to prevent null property selection crashes
   try {
-    const filename = event.queryStringParameters?.filename || `file-${Date.now()}`;
-    const contentType = event.queryStringParameters?.contentType || "application/octet-stream";
+    const queryParams = event?.queryStringParameters || {};
     
-    // Generate a uniquely timestamped key path in S3
+    // Fall back to timestamp variations if parameters are completely missing
+    const filename = queryParams.filename || `upload-${Date.now()}.dat`;
+    const contentType = queryParams.contentType || "application/octet-stream";
+    
     const s3Key = `attachments/${Date.now()}-${filename}`;
 
     const command = new PutObjectCommand({
@@ -18,21 +24,33 @@ export const handler = async (event) => {
       ContentType: contentType,
     });
 
-    // Link stays active for 5 minutes (300 seconds)
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "https://github.io",
+        "Access-Control-Allow-Methods": "GET,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization"
+      },
       body: JSON.stringify({
         uploadUrl,
         fileUrl: `https://${BUCKET_NAME}://{s3Key}`
       }),
     };
   } catch (err) {
+    console.error("FATAL RUNTIME EXCEPTION ENCOUNTERED:", err.stack);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: err.message }),
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "https://github.io" 
+      },
+      body: JSON.stringify({ 
+        message: "Internal runtime error inside token generation logic.",
+        error: err.message
+      }),
     };
   }
 };
