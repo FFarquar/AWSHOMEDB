@@ -347,15 +347,17 @@ Resources:
   # ATTACHMENTS (S3 + Presigned URL)
   # =========================
 
-  AttachmentsBucket:
+ AttachmentsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      # BucketName: !Sub "${AWS::StackName}-attachments-bucket"
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ["*"]
-            AllowedMethods: [PUT]
-            AllowedOrigins: ["https://github.io"]
+            AllowedMethods: 
+              - PUT
+              - OPTIONS # 🚀 CRITICAL: Preflight requests require OPTIONS authorization!
+            AllowedOrigins: 
+              - "https://ffarquar.github.io" # 🚀 FIX: Match your live frontend domain exactly!
             MaxAge: 3000
 
   GetPresignedUrlFunction:
