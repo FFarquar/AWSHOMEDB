@@ -358,16 +358,16 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              SSEAlgorithm: "AES256"
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: 
               - "*"
             AllowedMethods: 
-              - PUT
-              - OPTIONS
+              - "PUT"
+              - "OPTIONS"
             AllowedOrigins: 
-              - https://ffarquar.github.io
+              - "https://github.io"
             MaxAge: 3000
 
   GetPresignedUrlFunction:
