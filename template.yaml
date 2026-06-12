@@ -384,7 +384,7 @@ Resources:
   AddAttachmentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: AddAttachmentFunction
+
       Handler: src/handlers/attachments/attachment-create.handler # Updated to your exact project path pattern
       Runtime: nodejs24.x
       CodeUri: .                                                  # Set to root directory like your working function
@@ -410,7 +410,7 @@ Resources:
   RemoveAttachmentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: RemoveAttachmentFunction
+
       Handler: src/handlers/attachments/attachment-remove.handler # Updated to your exact project path pattern
       Runtime: nodejs24.x
       CodeUri: .                                                  # Set to root directory like your working function
