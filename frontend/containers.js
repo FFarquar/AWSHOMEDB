@@ -621,19 +621,15 @@ async function handleAttachmentUpload() {
     // 🧠 LOCAL SANDBOX MOCK MODE (SEQUENTIAL STORAGE)
     // ==================================================
     if (window.APP_CONFIG?.USE_MOCK) {
-        // Create an internal browser link pointing to the temporary RAM file block
         const localMockUrl = URL.createObjectURL(file);
         
-        // Append structured file information to our multi-file global state array
         currentItemAttachments.push({
             name: file.name,
             url: localMockUrl
         });
 
-        // Force our interactive UI layout attachment list to re-render immediately
         updateModalAttachmentListUI();
 
-        // Clear loading indicators and reset the input field picker component
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
         
@@ -642,7 +638,7 @@ async function handleAttachmentUpload() {
     }
 
     // ==================================================
-    // 🌐AWS ROUTE (S3 UPLOAD ENGINE)
+    // 🌐 AWS ROUTE (S3 UPLOAD ENGINE + DYNAMODB MERGE)
     // ==================================================
     try {
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
@@ -664,11 +660,36 @@ async function handleAttachmentUpload() {
         });
         if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
 
-        // 3. Append the permanent clean AWS resource mapping details to your item list collection
-        currentItemAttachments.push({
-            name: file.name,
-            url: fileUrl
+        if (progressStatus) progressStatus.innerText = "⏳ Saving attachment reference to database...";
+
+        // ✨ 3. Call your new DynamoDB handler to attach the data to the row permanently
+        // (Note: Replace currentActiveContainerId and currentActiveItemId with your app's actual variable names)
+        const dbPayload = {
+            containerId: currentActiveContainerId, 
+            itemId: currentActiveItemId,           
+            filename: file.name,
+            fileUrl: fileUrl
+        };
+
+        const dbRes = await fetch(`${API}/attachments/save`, {
+            method: "POST",
+            headers: {
+                ...authHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dbPayload)
         });
+
+        if (!dbRes.ok) {
+            const errData = await dbRes.json().catch(() => ({}));
+            throw new Error(errData.message || "Failed to log attachment mapping details to DynamoDB.");
+        }
+
+        const dbResult = await dbRes.json();
+
+        // 4. Synchronize your active UI memory space array using the updated clean DB state
+        // This ensures the frontend matches exactly what was cleanly formatted in the database
+        currentItemAttachments = dbResult.attachments || [];
         
         // Force list refresh to match current live configuration space layout
         updateModalAttachmentListUI();
@@ -682,3 +703,4 @@ async function handleAttachmentUpload() {
         fileInput.value = "";
     }
 }
+

@@ -378,6 +378,58 @@ Resources:
             Method: GET
             PayloadFormatVersion: "1.0"
 
+  # =========================================================================
+  # 📁 Generic Attachment Logger Lambda Function
+  # =========================================================================
+  AddAttachmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: AddAttachmentFunction
+      Handler: attachment-create.handler
+      Runtime: nodejs24.x                  # ✨ Fixed: Modern Node.js engine
+      CodeUri: ./src/handlers/attachments/
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable  # ✨ Fixed: Linked to your real table
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable # ✨ Fixed: Linked to your real table
+      Events:
+        PostAttachmentApi:
+          Type: Api
+          Properties:
+            Path: /attachments
+            Method: post
+
+  # =========================================================================
+  # 🗑️ Generic Attachment Remover Lambda Function
+  # =========================================================================
+  RemoveAttachmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: RemoveAttachmentFunction
+      Handler: attachment-remove.handler
+      Runtime: nodejs24.x                  # ✨ Fixed: Modern Node.js engine
+      CodeUri: ./src/handlers/attachments/
+      MemorySize: 128
+      Timeout: 15
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AWSHomeDBTable  # ✨ Fixed: Linked to your real table
+          BUCKET_NAME: !Ref AttachmentsBucket # ✨ Fixed: Linked to your real S3 bucket
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable # ✨ Fixed: Linked to your real table
+        - S3CrudPolicy:
+            BucketName: !Ref AttachmentsBucket # ✨ Fixed: Linked to your real S3 bucket
+      Events:
+        DeleteAttachmentApi:
+          Type: Api
+          Properties:
+            Path: /attachments/delete
+            Method: post
 
 Outputs:
   WebEndpoint:
