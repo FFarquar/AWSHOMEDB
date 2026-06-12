@@ -350,20 +350,15 @@ Resources:
   AttachmentsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      # 1. Restrict public lookup capabilities to comply with security frameworks
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-
-      # 2. Add mandated data encryption keys
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-
-      # 3. Keep your working CORS layout setup completely intact below
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: 
