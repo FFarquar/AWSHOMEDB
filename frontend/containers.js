@@ -394,8 +394,13 @@
     }
 
     function clearItemForm() {
-        ["itemName","itemCategory","itemPurchasedFrom","itemPurchasePrice","itemPurchaseDate","itemWarrantyExpiryDate","itemPhysicalLocation","attLabel","attUrl"]
-        .forEach(id => document.getElementById(id).value = "");
+        ["itemName", "itemCategory", "itemPurchasedFrom", "itemPurchasePrice", "itemPurchaseDate", "itemWarrantyExpiryDate", "itemPhysicalLocation"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+
+        currentItemAttachments = []; 
+        updateModalAttachmentListUI();
     }
 
     function addAttachmentToState() {
@@ -417,10 +422,35 @@
         renderModalAttachments();
     }
 
-    function removeAttachmentFromState(idx) {
-        currentItemAttachments.splice(idx, 1);
-        renderModalAttachments();
+// 🚀 ADD THIS NEW STATE CONTROLLER TO HANDLE DELETIONS MID-SESSION:
+    function removeAttachmentFromState(indexToDrop) {
+        // Drop the file entry cleanly out of our array workspace tracking index
+        currentItemAttachments.splice(indexToDrop, 1);
+        // Force the list interface matrix view to re-render instantly on screen
+        updateModalAttachmentListUI();
     }
+
+    function updateModalAttachmentListUI() {
+        const listElement = document.getElementById("modalAttachmentList");
+        if (!listElement) return;
+
+        // If there are no attachments uploaded yet, empty out the container block
+        if (!currentItemAttachments || currentItemAttachments.length === 0) {
+            listElement.innerHTML = `<li style="color:#888; font-style:italic; list-style:none; margin-left:-20px;">No files attached yet.</li>`;
+            return;
+        }
+
+        // Loop through our attachments array list and generate interactive view rows
+        listElement.innerHTML = currentItemAttachments.map((att, idx) => `
+            <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; background:#fff; padding:4px 8px; border-radius:4px; border:1px solid #eee;">
+                <a href="${att.url}" target="_blank" style="color: #0073bb; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%;">
+                    📎 ${att.name || `File ${idx + 1}`}
+                </a>
+                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; font-weight:bold;">Remove</button>
+            </li>
+        `).join('');
+    }
+
 
     function renderModalAttachments() {
         const list = document.getElementById("modalAttachmentList");
@@ -571,40 +601,84 @@
         window.location.href = "login.html";
     }
 
-    async function handleAttachmentUpload() {
-        const fileInput = document.getElementById("itemFilePicker");
-        if (!fileInput.files.length) return alert("Please select a file first.");
-        
-        const file = fileInput.files[0];
-        
-        // Handle local mock mode sandbox quickly
-        if (window.APP_CONFIG?.USE_MOCK) {
-            const mockUrl = `https://mock-s3-bucket.local{Date.now()}-${file.name}`;
-            currentItemAttachments.push(mockUrl);
-            alert(`Mock Upload Success: Added ${file.name}`);
-            return;
-        }
+async function handleAttachmentUpload() {
+    const fileInput = document.getElementById("itemFilePicker");
+    const progressStatus = document.getElementById("uploadProgressBar");
 
-        try {
-            // 1. Get the ticket link from your AWS endpoint
-            const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
-            const res = await fetch(presignPath, { headers: authHeaders() });
-            if (!res.ok) throw new Error("Failed getting secure token path.");
-            
-            const { uploadUrl, fileUrl } = await res.json();
-
-            // 2. Stream the binary file straight from browser workspace to S3
-            const uploadRes = await fetch(uploadUrl, {
-                method: "PUT",
-                headers: { "Content-Type": file.type },
-                body: file
-            });
-            if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
-
-            // 3. Keep record of the URL so saveItem tracks it
-            currentItemAttachments.push(fileUrl);
-            alert(`Upload Success! ${file.name} attached safely.`);
-        } catch (err) {
-            alert(`Attachment pipeline error: ${err.message}`);
-        }
+    if (!fileInput || !fileInput.files.length) {
+        return alert("Please select a file first.");
     }
+    
+    const file = fileInput.files[0];
+    
+    // Show user feedback loader element if it exists in the HTML
+    if (progressStatus) {
+        progressStatus.style.display = "block";
+        progressStatus.innerText = "⏳ Processing file upload...";
+    }
+
+    // ==================================================
+    // 🧠 LOCAL SANDBOX MOCK MODE (SEQUENTIAL STORAGE)
+    // ==================================================
+    if (window.APP_CONFIG?.USE_MOCK) {
+        // Create an internal browser link pointing to the temporary RAM file block
+        const localMockUrl = URL.createObjectURL(file);
+        
+        // Append structured file information to our multi-file global state array
+        currentItemAttachments.push({
+            name: file.name,
+            url: localMockUrl
+        });
+
+        // Force our interactive UI layout attachment list to re-render immediately
+        updateModalAttachmentListUI();
+
+        // Clear loading indicators and reset the input field picker component
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+        
+        alert(`Mock Upload Success: Added ${file.name}`);
+        return;
+    }
+
+    // ==================================================
+    // 🌐AWS ROUTE (S3 UPLOAD ENGINE)
+    // ==================================================
+    try {
+        if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
+
+        // 1. Fetch short-lived presigned upload authorization token from API Gateway
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const res = await fetch(presignPath, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed getting secure token path.");
+        
+        const { uploadUrl, fileUrl } = await res.json();
+
+        if (progressStatus) progressStatus.innerText = "⏳ Streaming file directly to S3...";
+
+        // 2. Stream the binary payload straight from the browser client workspace out to AWS S3
+        const uploadRes = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file
+        });
+        if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
+
+        // 3. Append the permanent clean AWS resource mapping details to your item list collection
+        currentItemAttachments.push({
+            name: file.name,
+            url: fileUrl
+        });
+        
+        // Force list refresh to match current live configuration space layout
+        updateModalAttachmentListUI();
+        
+        alert(`Upload Success! ${file.name} attached safely.`);
+    } catch (err) {
+        alert(`Attachment pipeline error: ${err.message}`);
+    } finally {
+        // Clean up visual page variables cleanly regardless of execution status state
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+    }
+}
