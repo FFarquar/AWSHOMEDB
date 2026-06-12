@@ -1,12 +1,5 @@
-import { createRequire } from "module";
-import path from "path";
-
-// 🚀 FORCE NODE TO RESOLVE DEPENDENCIES OUT OF YOUR ROOT SAM DEPLOYMENT PACKAGE
-const require = createRequire(import.meta.url);
-const rootPath = path.resolve(".");
-
-const { S3Client, PutObjectCommand } = require(path.join(rootPath, "node_modules/@aws-sdk/client-s3"));
-const { getSignedUrl } = require(path.join(rootPath, "node_modules/@aws-sdk/s3-request-presigner"));
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
@@ -16,7 +9,6 @@ export const handler = async (event) => {
   try {
     const s3 = new S3Client({ region: "ap-southeast-2" });
 
-    // Fallback dictionary checks to capture both 1.0 and 2.0 payload mapping versions
     const queryParams = event.queryStringParameters || {};
     const filename = queryParams.filename || `asset-${Date.now()}.dat`;
     const contentType = queryParams.contentType || "application/octet-stream";
@@ -29,7 +21,6 @@ export const handler = async (event) => {
       ContentType: contentType,
     });
 
-    // Generate secure upload path link
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
     return {
