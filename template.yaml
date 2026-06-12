@@ -377,6 +377,7 @@ Resources:
             ApiId: !Ref MyServerlessApi
             Path: /attachments/presign
             Method: GET
+            PayloadFormatVersion: "1.0"
 
 
 Outputs:
