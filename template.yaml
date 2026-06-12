@@ -385,23 +385,24 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: AddAttachmentFunction
-      Handler: attachment-create.handler
-      Runtime: nodejs24.x                  # ✨ Fixed: Modern Node.js engine
-      CodeUri: ./src/handlers/attachments/
+      Handler: src/handlers/attachments/attachment-create.handler # Updated to your exact project path pattern
+      Runtime: nodejs24.x
+      CodeUri: .                                                  # Set to root directory like your working function
       MemorySize: 128
       Timeout: 10
       Environment:
         Variables:
-          TABLE_NAME: !Ref AWSHomeDBTable  # ✨ Fixed: Linked to your real table
+          TABLE_NAME: !Ref AWSHomeDBTable
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref AWSHomeDBTable # ✨ Fixed: Linked to your real table
+            TableName: !Ref AWSHomeDBTable
       Events:
         PostAttachmentApi:
-          Type: Api
+          Type: HttpApi                                           # ✨ Fixed: Uses HTTP API gateway protocols
           Properties:
+            ApiId: !Ref MyServerlessApi                           # ✨ Fixed: Uses standard HTTP identifier
             Path: /attachments
-            Method: post
+            Method: POST
 
   # =========================================================================
   # 🗑️ Generic Attachment Remover Lambda Function
@@ -410,26 +411,27 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: RemoveAttachmentFunction
-      Handler: attachment-remove.handler
-      Runtime: nodejs24.x                  # ✨ Fixed: Modern Node.js engine
-      CodeUri: ./src/handlers/attachments/
+      Handler: src/handlers/attachments/attachment-remove.handler # Updated to your exact project path pattern
+      Runtime: nodejs24.x
+      CodeUri: .                                                  # Set to root directory like your working function
       MemorySize: 128
       Timeout: 15
       Environment:
         Variables:
-          TABLE_NAME: !Ref AWSHomeDBTable  # ✨ Fixed: Linked to your real table
-          BUCKET_NAME: !Ref AttachmentsBucket # ✨ Fixed: Linked to your real S3 bucket
+          TABLE_NAME: !Ref AWSHomeDBTable
+          BUCKET_NAME: !Ref AttachmentsBucket
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref AWSHomeDBTable # ✨ Fixed: Linked to your real table
+            TableName: !Ref AWSHomeDBTable
         - S3CrudPolicy:
-            BucketName: !Ref AttachmentsBucket # ✨ Fixed: Linked to your real S3 bucket
+            BucketName: !Ref AttachmentsBucket
       Events:
         DeleteAttachmentApi:
-          Type: Api
+          Type: HttpApi                                           # ✨ Fixed: Uses HTTP API gateway protocols
           Properties:
+            ApiId: !Ref MyServerlessApi                           # ✨ Fixed: Uses standard HTTP identifier
             Path: /attachments/delete
-            Method: post
+            Method: POST
 
 Outputs:
   WebEndpoint:
