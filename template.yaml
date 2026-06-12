@@ -350,24 +350,11 @@ Resources:
   AttachmentsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "AES256"
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders: 
-              - "*"
-            AllowedMethods: 
-              - "PUT"
-              - "OPTIONS"
-            AllowedOrigins: 
-              - "https://github.io"
+          - AllowedHeaders: ["*"]
+            AllowedMethods: ["PUT", "OPTIONS"]
+            AllowedOrigins: ["https://github.io"]
             MaxAge: 3000
 
   GetPresignedUrlFunction:
