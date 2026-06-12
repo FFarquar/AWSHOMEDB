@@ -34,7 +34,7 @@ Resources:
       CorsConfiguration:
         AllowOrigins:
           # - https://github.io
-          - https://ffarquar.github.io
+          - https://github.io
         AllowHeaders:
           - Content-Type
           - Authorization
@@ -146,6 +146,95 @@ Resources:
             ApiId: !Ref MyServerlessApi
             Path: /containers/{id}
             Method: PUT
+
+  # =========================
+  # ITEMS
+  # =========================
+
+  ItemCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/items/items-create.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PostItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items
+            Method: POST
+
+  ItemsListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/items/items-list.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetItems:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items
+            Method: GET
+
+  ItemGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/items/items-get.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetItemById:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}
+            Method: GET
+
+  ItemUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/items/items-update.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PutItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}
+            Method: PUT
+
+  ItemDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/items/items-delete.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        DeleteItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}
+            Method: DELETE
 
   # =========================
   # LOGIN (PUBLIC)
