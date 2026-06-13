@@ -611,7 +611,6 @@ async function handleAttachmentUpload() {
     
     const file = fileInput.files[0];
     
-    // Show user feedback loader element if it exists in the HTML
     if (progressStatus) {
         progressStatus.style.display = "block";
         progressStatus.innerText = "⏳ Processing file upload...";
@@ -624,10 +623,14 @@ async function handleAttachmentUpload() {
         const localMockUrl = URL.createObjectURL(file);
         
         currentItemAttachments.push({
+            attachmentId: "ATT#" + Date.now(),
+            label: file.name,
+            s3Url: localMockUrl,
             name: file.name,
             url: localMockUrl
         });
 
+        renderModalAttachments();
         updateModalAttachmentListUI();
 
         if (progressStatus) progressStatus.style.display = "none";
@@ -662,18 +665,18 @@ async function handleAttachmentUpload() {
 
         if (progressStatus) progressStatus.innerText = "⏳ Saving attachment reference to database...";
 
-        // ✨ Step 3. Call your new DynamoDB handler using your exact active globals
-        if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
+        // ✨ Step 3. Self-clean the prefixes from live globals to ensure precision
+        const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "");
+        const cleanItemId = String(editingItemId).replace("ITEM#", "");
 
         const dbPayload = {
-            pk: `CONTAINER#${activeShortContainerId}`, // 🌟 Maps to your live parent container variable
-            sk: `ITEM#${editingItemId}`,               // 🌟 Maps to your live active item variable
+            pk: `CONTAINER#${cleanContainerId}`, 
+            sk: `ITEM#${cleanItemId}`,           
             filename: file.name,
             fileUrl: fileUrl
         };
 
         const targetUrl = `${API}/attachments`.replace("//attachments", "/attachments");
-        
         console.log("✈️ Sending browser payload to absolute path:", targetUrl);
 
         const dbRes = await fetch(targetUrl, {
@@ -684,6 +687,7 @@ async function handleAttachmentUpload() {
             },
             body: JSON.stringify(dbPayload)
         });
+        
         if (!dbRes.ok) {
             const errData = await dbRes.json().catch(() => ({}));
             throw new Error(errData.message || "Failed to log attachment mapping details to DynamoDB.");
@@ -691,20 +695,18 @@ async function handleAttachmentUpload() {
 
         const dbResult = await dbRes.json();
 
-        // 4. Synchronize your active UI memory space array using the updated clean DB state
-        // This ensures the frontend matches exactly what was cleanly formatted in the database
+        // 4. Synchronise active memory space using the updated array
         currentItemAttachments = dbResult.attachments || [];
         
-        // Force list refresh to match current live configuration space layout
+        // Force both rendering elements to refresh instantly
+        renderModalAttachments();
         updateModalAttachmentListUI();
         
         alert(`Upload Success! ${file.name} attached safely.`);
     } catch (err) {
         alert(`Attachment pipeline error: ${err.message}`);
     } finally {
-        // Clean up visual page variables cleanly regardless of execution status state
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
     }
 }
-
