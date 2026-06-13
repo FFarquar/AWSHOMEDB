@@ -666,18 +666,23 @@ async function handleAttachmentUpload() {
         if (progressStatus) progressStatus.innerText = "⏳ Saving attachment reference to database...";
 
         // ✨ Step 3. Self-clean the prefixes from live globals to ensure precision
-        const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "");
-        const cleanItemId = String(editingItemId).replace("ITEM#", "");
+        if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
 
+        // Strip prefixes entirely to find the raw underlying IDs
+        const rawContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
+        const rawItemId = String(editingItemId).replace("ITEM#", "").trim();
+
+        // Construct pristine single-table keys for DynamoDB matching your CSV schema
         const dbPayload = {
-            pk: `CONTAINER#${cleanContainerId}`, 
-            sk: `ITEM#${cleanItemId}`,           
+            pk: `CONTAINER#${rawContainerId.toUpperCase()}`, // Forces upper case to match "CONTAINER2"
+            sk: `ITEM#${rawItemId}`,                          // Ensures exactly one "ITEM#" prefix
             filename: file.name,
             fileUrl: fileUrl
         };
 
-        const targetUrl = `${API}/attachments`.replace("//attachments", "/attachments");
-        console.log("✈️ Sending browser payload to absolute path:", targetUrl);
+        console.log("🚀 VERIFYING PAYLOAD STRINGS:", JSON.stringify(dbPayload));
+
+        const targetUrl = `${API}/attachments`; 
 
         const dbRes = await fetch(targetUrl, {
             method: "POST",
