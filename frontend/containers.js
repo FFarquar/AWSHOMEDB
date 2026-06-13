@@ -670,15 +670,15 @@ async function handleAttachmentUpload() {
             // 💡 PATHWAY A: BRAND NEW ITEM (Save to local array memory only for now)
             console.log("📝 Staging attachment locally until item creation is finalized.");
             
-            // Build the object to match BOTH frontend rendering styles perfectly
+            // ✨ Fixed: Populates BOTH label/s3Url and name/url properties to satisfy all rendering functions
             const stagedAttachment = {
                 attachmentId: `att-${Date.now()}`,
                 filename: file.name,
                 fileUrl: fileUrl,
-                label: file.name,      // Used by renderModalAttachments
-                s3Url: fileUrl,        // Used by renderModalAttachments
-                name: file.name,       // Used by updateModalAttachmentListUI
-                url: fileUrl           // Used by updateModalAttachmentListUI
+                label: file.name,      // 🌟 Matches renderItemsTable() and renderModalAttachments()
+                s3Url: fileUrl,        // 🌟 Matches renderItemsTable() and renderModalAttachments()
+                name: file.name,       // 🌟 Matches updateModalAttachmentListUI()
+                url: fileUrl           // 🌟 Matches updateModalAttachmentListUI()
             };
 
             currentItemAttachments.push(stagedAttachment);
@@ -687,6 +687,7 @@ async function handleAttachmentUpload() {
             renderModalAttachments();
             
             alert(`Staged "${file.name}"! It will be permanently linked when you save this new item.`);
+
 
         } else {
             // 💡 PATHWAY B: EXISTING ITEM (Commit straight to DynamoDB right away)
