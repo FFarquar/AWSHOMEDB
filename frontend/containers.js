@@ -279,7 +279,7 @@
         document.getElementById("containersPanelView").style.display = "block";
     }
 
-     async function loadItems() {
+        async function loadItems() {
         const tbody = document.getElementById("itemsTableBody");
         if (!tbody) return;
         tbody.innerHTML = `<tr><td colspan="8">Searching for child records...</td></tr>`;
@@ -311,16 +311,26 @@
                 
                 const rawItems = await res.json();
                 
-                // ✨ FIX: Safely parse attachments string blocks into clean JSON array matrices
+                // ✨ FIX: Map and normalise structural variations coming back from DynamoDB
                 childItems = Array.isArray(rawItems) ? rawItems.map(item => {
-                    if (typeof item.attachments === "string") {
+                    // Check both legacy attachments column and your explicit itemAttachments schema property
+                    let rawAtts = item.itemAttachments || item.attachments;
+                    
+                    if (typeof rawAtts === "string" && rawAtts.trim() !== "") {
                         try {
-                            item.attachments = JSON.parse(item.attachments);
+                            rawAtts = JSON.parse(rawAtts);
                         } catch (e) {
-                            item.attachments = [];
+                            rawAtts = [];
                         }
                     }
-                    if (!Array.isArray(item.attachments)) item.attachments = [];
+                    
+                    // Normalise every entry to have unified keys to satisfy your frontend HTML loops perfectly
+                    item.attachments = Array.isArray(rawAtts) ? rawAtts.map(a => ({
+                        ...a,
+                        label: a.filename || a.label || "File Attachment",
+                        s3Url: a.fileUrl || a.s3Url || ""
+                    })) : [];
+                    
                     return item;
                 }) : [];
 
@@ -487,13 +497,13 @@
         });
     }
 
-       async function saveItem() {
+        async function saveItem() {
         if (!canManageItems) return alert("Action restricted."); 
         const nameVal = document.getElementById("itemName").value.trim();
         if (!nameVal) return alert("Item Name is mandatory.");
 
-        // 1. Dual-Key Map structures files safely to satisfy all frontend template loops
-        const formattedAttachments = currentItemAttachments.map(att => ({
+        // Clean file properties structure ensuring compatibility across both modal variations
+        const cleanedAttachments = currentItemAttachments.map(att => ({
             attachmentId: att.attachmentId || `att-${Date.now()}`,
             filename: att.filename || att.label || "File Attachment",
             fileUrl: att.fileUrl || att.s3Url || "",
@@ -501,17 +511,17 @@
             s3Url: att.fileUrl || att.s3Url || ""                  
         }));
 
-        // 2. Package fields to match your legacy single-table schema format
+        // ✨ The Fix: Payload variable strings mapped exactly to match items-create backend properties
         const payload = {
             itemName: nameVal,
-            category: document.getElementById("itemCategory").value.trim() || "General",
-            purchasedFrom: document.getElementById("itemPurchasedFrom").value.trim() || "Unknown",
-            purchasePrice: Number(document.getElementById("itemPurchasePrice").value) || 0,
-            purchaseDate: document.getElementById("itemPurchaseDate").value || null,
-            warrantyExpiryDate: document.getElementById("itemWarrantyExpiryDate").value || "1970-01-01",
-            physicalPaperStorageLocation: document.getElementById("itemPhysicalLocation").value.trim(),
-            // ✨ THE FIX: Forces a clean stringified JSON array format so ItemCreateFunction handles it natively
-            attachments: JSON.stringify(formattedAttachments)
+            itemCategory: document.getElementById("itemCategory").value.trim() || "General",
+            itempurchasedFrom: document.getElementById("itemPurchasedFrom").value.trim() || "Unknown",
+            itempurchasePrice: Number(document.getElementById("itemPurchasePrice").value) || 0,
+            itempurchaseDate: document.getElementById("itemPurchaseDate").value || null,
+            itemwarrantyPeriod: document.getElementById("itemWarrantyExpiryDate").value || "1970-01-01",
+            itemphysicalPaperStorageLocation: document.getElementById("itemPhysicalLocation").value.trim(),
+            // 🌟 Crucial Alignment Fix: Matches body.itemAttachments exactly
+            itemAttachments: cleanedAttachments 
         };
 
         if (window.APP_CONFIG?.USE_MOCK) {
@@ -550,18 +560,19 @@
             });
             if (!response.ok) throw new Error(`Rejection status: ${response.status}`);
 
-            // Force fresh data loading from AWS completely
+            // Fetch the updated dataset completely from AWS
             await loadItems();
             
-            // Wipe modal settings and close the window
+            // Close the form modal safely
             closeItemModal();
             
-            alert("Item saved successfully!");
+            alert("Item saved successfully to the database!");
 
         } catch (error) {
             alert(`Save lifecycle failed: ${error.message}`);
         }
     }
+
 
 
 
