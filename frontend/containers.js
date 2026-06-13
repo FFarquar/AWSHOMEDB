@@ -672,7 +672,11 @@ async function handleAttachmentUpload() {
             fileUrl: fileUrl
         };
 
-        const dbRes = await fetch(`${API}/attachments`, {
+        const targetUrl = `${API}/attachments`.replace("//attachments", "/attachments");
+        
+        console.log("✈️ Sending browser payload to absolute path:", targetUrl);
+
+        const dbRes = await fetch(targetUrl, {
             method: "POST",
             headers: {
                 ...authHeaders(),
@@ -680,7 +684,6 @@ async function handleAttachmentUpload() {
             },
             body: JSON.stringify(dbPayload)
         });
-
         if (!dbRes.ok) {
             const errData = await dbRes.json().catch(() => ({}));
             throw new Error(errData.message || "Failed to log attachment mapping details to DynamoDB.");
