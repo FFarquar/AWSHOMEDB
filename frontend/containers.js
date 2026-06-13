@@ -288,11 +288,8 @@
             console.log("ℹ️ Fetching mock items collection utilizing apiClient wrapper channels...");
             try {
                 const allMockItems = await apiGet(`/containers/${activeShortContainerId}/items`, "mock-items.json");
-                
-                // Ensure active comparison string is sanitized to lowercase
                 const targetContainerId = (activeShortContainerId || "").toLowerCase();
 
-                // ✨ FIXED: Converts both IDs to lowercase to bypass casing mismatch bugs completely
                 childItems = Array.isArray(allMockItems) 
                     ? allMockItems.filter(i => (i.containerId || "").toLowerCase() === targetContainerId) 
                     : [];
@@ -311,7 +308,22 @@
                     headers: authHeaders()
                 });
                 if (!res.ok) throw new Error(`Error Status: ${res.status}`);
-                childItems = await res.json();
+                
+                const rawItems = await res.json();
+                
+                // ✨ FIX: Safely parse attachments string blocks into clean JSON array matrices
+                childItems = Array.isArray(rawItems) ? rawItems.map(item => {
+                    if (typeof item.attachments === "string") {
+                        try {
+                            item.attachments = JSON.parse(item.attachments);
+                        } catch (e) {
+                            item.attachments = [];
+                        }
+                    }
+                    if (!Array.isArray(item.attachments)) item.attachments = [];
+                    return item;
+                }) : [];
+
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Error fetching child collection: ${err.message}</td></tr>`;
                 return;
@@ -319,6 +331,7 @@
         }
         renderItemsTable();
     }
+
 
     function renderItemsTable() {
         const tbody = document.getElementById("itemsTableBody");
@@ -369,7 +382,7 @@
     }
 
     function openItemEdit(itemId) {
-        if (!canManageItems) return; // ✨ FIXED
+        if (!canManageItems) return; 
         editingItemId = itemId;
         const target = childItems.find(i => i.itemId === itemId);
         document.getElementById("itemModalTitle").innerText = "Modify Item Properties";
@@ -382,7 +395,14 @@
         document.getElementById("itemWarrantyExpiryDate").value = target.warrantyExpiryDate === "1970-01-01" ? "" : target.warrantyExpiryDate;
         document.getElementById("itemPhysicalLocation").value = target.physicalPaperStorageLocation || "";
         
-        currentItemAttachments = target.attachments ? [...target.attachments] : [];
+        // ✨ FIX: Handle both stringified or raw native list attributes on edit load
+        let rawAtts = target.attachments;
+        if (typeof rawAtts === "string") {
+            try { rawAtts = JSON.parse(rawAtts); } catch (e) { rawAtts = []; }
+        }
+        
+        currentItemAttachments = Array.isArray(rawAtts) ? [...rawAtts] : [];
+        
         renderModalAttachments();
         document.getElementById("itemModal").style.display = "flex";
     }
@@ -480,7 +500,8 @@
             purchaseDate: document.getElementById("itemPurchaseDate").value || null,
             warrantyExpiryDate: document.getElementById("itemWarrantyExpiryDate").value || "1970-01-01",
             physicalPaperStorageLocation: document.getElementById("itemPhysicalLocation").value.trim(),
-            attachments: currentItemAttachments
+            // 🌟 If your items backend strictly requires string arrays, change to: JSON.stringify(currentItemAttachments)
+            attachments: currentItemAttachments 
         };
 
         if (window.APP_CONFIG?.USE_MOCK) {
