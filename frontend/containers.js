@@ -665,12 +665,11 @@ async function handleAttachmentUpload() {
         // ✨ 3. Call your new DynamoDB handler to attach the data to the row permanently
         // (Note: Replace currentActiveContainerId and currentActiveItemId with your app's actual variable names)
         const dbPayload = {
-            containerId: currentActiveContainerId, 
-            itemId: currentActiveItemId,           
+            pk: `CONTAINER#${selectedItem.containerId}`, 
+            sk: `ITEM#${selectedItem.itemId}`,           
             filename: file.name,
             fileUrl: fileUrl
         };
-
         const dbRes = await fetch(`${API}/attachments/save`, {
             method: "POST",
             headers: {
