@@ -492,7 +492,15 @@
         const nameVal = document.getElementById("itemName").value.trim();
         if (!nameVal) return alert("Item Name is mandatory.");
 
-        // Pack the payload fields tightly matching your legacy schema structure
+        // ✨ Dual-Key Formatting ensures compatibility across both frontend template loops
+        const formattedAttachments = currentItemAttachments.map(att => ({
+            attachmentId: att.attachmentId || `att-${Date.now()}`,
+            filename: att.filename || att.label || "File Attachment",
+            fileUrl: att.fileUrl || att.s3Url || "",
+            label: att.filename || att.label || "File Attachment", // Fixed: satisfies rendering loops
+            s3Url: att.fileUrl || att.s3Url || ""                  // Fixed: satisfies rendering loops
+        }));
+
         const payload = {
             itemName: nameVal,
             category: document.getElementById("itemCategory").value.trim() || "General",
@@ -501,7 +509,8 @@
             purchaseDate: document.getElementById("itemPurchaseDate").value || null,
             warrantyExpiryDate: document.getElementById("itemWarrantyExpiryDate").value || "1970-01-01",
             physicalPaperStorageLocation: document.getElementById("itemPhysicalLocation").value.trim(),
-            attachments: currentItemAttachments // 🌟 Array sent cleanly with matching properties
+            // ✨ Enforces standard stringified array syntax matching your legacy schema layout
+            attachments: JSON.stringify(formattedAttachments)
         };
 
         if (window.APP_CONFIG?.USE_MOCK) {
@@ -524,18 +533,19 @@
             });
             if (!response.ok) throw new Error(`Rejection status: ${response.status}`);
 
-            // 🌟 CRITICAL SEQUENCE FIX: Force app data reload from AWS FIRST
+            // Force data synchronization from cloud first
             await loadItems();
             
-            // 🌟 CRITICAL SEQUENCE FIX: Close modal and wipe state ONLY after data is locked in
+            // Wipe modal view state elements only after successful state preservation
             closeItemModal();
             
-            alert("Item and all attachments saved successfully to the database!");
+            alert("Item saved successfully!");
 
         } catch (error) {
             alert(`Save lifecycle failed: ${error.message}`);
         }
     }
+ 
 
 
     async function finalizeItemDelete(itemId) {
