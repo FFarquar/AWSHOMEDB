@@ -609,6 +609,7 @@ async function handleAttachmentUpload() {
         return alert("Please select a file first.");
     }
     
+    // Explicitly target the first selected file item
     const file = fileInput.files[0];
     
     if (progressStatus) {
@@ -631,7 +632,6 @@ async function handleAttachmentUpload() {
         });
 
         renderModalAttachments();
-        updateModalAttachmentListUI();
 
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
@@ -641,7 +641,7 @@ async function handleAttachmentUpload() {
     }
 
     // ==================================================
-    // 🌐 AWS ROUTE (S3 UPLOAD ENGINE + DYNAMODB MERGE)
+    // 🌐 AWS ROUTE (S3 UPLOAD ENGINE + STATE SPLIT)
     // ==================================================
     try {
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
@@ -663,51 +663,70 @@ async function handleAttachmentUpload() {
         });
         if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
 
-        if (progressStatus) progressStatus.innerText = "⏳ Saving attachment reference to database...";
+        // ==================================================
+        // 🔄 STATE ENGINE LOGIC SPLIT
+        // ==================================================
+        if (!editingItemId) {
+            // 💡 PATHWAY A: BRAND NEW ITEM (Save to local array memory only for now)
+            console.log("📝 Staging attachment locally until item creation is finalized.");
+            
+            // Build the object to match BOTH frontend rendering styles perfectly
+            const stagedAttachment = {
+                attachmentId: `att-${Date.now()}`,
+                filename: file.name,
+                fileUrl: fileUrl,
+                label: file.name,      // Used by renderModalAttachments
+                s3Url: fileUrl,        // Used by renderModalAttachments
+                name: file.name,       // Used by updateModalAttachmentListUI
+                url: fileUrl           // Used by updateModalAttachmentListUI
+            };
 
-        // ✨ Step 3. Self-clean the prefixes from live globals to ensure precision
-        if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
+            currentItemAttachments.push(stagedAttachment);
+            
+            // Refresh the open modal views instantly on screen
+            renderModalAttachments();
+            
+            alert(`Staged "${file.name}"! It will be permanently linked when you save this new item.`);
 
-        // Strip prefixes entirely to find the raw underlying IDs
-        const rawContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
-        const rawItemId = String(editingItemId).replace("ITEM#", "").trim();
+        } else {
+            // 💡 PATHWAY B: EXISTING ITEM (Commit straight to DynamoDB right away)
+            if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
 
-        // Construct pristine single-table keys for DynamoDB matching your CSV schema
-        const dbPayload = {
-            pk: `CONTAINER#${rawContainerId.toUpperCase()}`, // Forces upper case to match "CONTAINER2"
-            sk: `ITEM#${rawItemId}`,                          // Ensures exactly one "ITEM#" prefix
-            filename: file.name,
-            fileUrl: fileUrl
-        };
+            const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
+            const cleanItemId = String(editingItemId).replace("ITEM#", "").trim();
 
-        console.log("🚀 VERIFYING PAYLOAD STRINGS:", JSON.stringify(dbPayload));
+            const dbPayload = {
+                pk: `CONTAINER#${cleanContainerId.toUpperCase()}`, 
+                sk: `ITEM#${cleanItemId}`,           
+                filename: file.name,
+                fileUrl: fileUrl
+            };
 
-        const targetUrl = `${API}/attachments`; 
+            const targetUrl = `${API}/attachments`; 
 
-        const dbRes = await fetch(targetUrl, {
-            method: "POST",
-            headers: {
-                ...authHeaders(),
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(dbPayload)
-        });
-        
-        if (!dbRes.ok) {
-            const errData = await dbRes.json().catch(() => ({}));
-            throw new Error(errData.message || "Failed to log attachment mapping details to DynamoDB.");
+            const dbRes = await fetch(targetUrl, {
+                method: "POST",
+                headers: {
+                    ...authHeaders(),
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(dbPayload)
+            });
+            
+            if (!dbRes.ok) {
+                const errData = await dbRes.json().catch(() => ({}));
+                throw new Error(errData.message || "Failed to log attachment mapping details to DynamoDB.");
+            }
+
+            const dbResult = await dbRes.json();
+
+            // Synchronize state directly from the clean post-save array from AWS
+            currentItemAttachments = dbResult.attachments || [];
+            
+            renderModalAttachments();
+            alert(`Upload Success! ${file.name} attached safely to existing record.`);
         }
 
-        const dbResult = await dbRes.json();
-
-        // 4. Synchronise active memory space using the updated array
-        currentItemAttachments = dbResult.attachments || [];
-        
-        // Force both rendering elements to refresh instantly
-        renderModalAttachments();
-        updateModalAttachmentListUI();
-        
-        alert(`Upload Success! ${file.name} attached safely.`);
     } catch (err) {
         alert(`Attachment pipeline error: ${err.message}`);
     } finally {
