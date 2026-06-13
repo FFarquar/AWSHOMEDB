@@ -662,15 +662,17 @@ async function handleAttachmentUpload() {
 
         if (progressStatus) progressStatus.innerText = "⏳ Saving attachment reference to database...";
 
-        // ✨ 3. Call your new DynamoDB handler to attach the data to the row permanently
-        // (Note: Replace currentActiveContainerId and currentActiveItemId with your app's actual variable names)
+        // ✨ Step 3. Call your new DynamoDB handler using your exact active globals
+        if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
+
         const dbPayload = {
-            pk: `CONTAINER#${selectedItem.containerId}`, 
-            sk: `ITEM#${selectedItem.itemId}`,           
+            pk: `CONTAINER#${activeShortContainerId}`, // 🌟 Maps to your live parent container variable
+            sk: `ITEM#${editingItemId}`,               // 🌟 Maps to your live active item variable
             filename: file.name,
             fileUrl: fileUrl
         };
-        const dbRes = await fetch(`${API}/attachments/save`, {
+
+        const dbRes = await fetch(`${API}/attachments`, {
             method: "POST",
             headers: {
                 ...authHeaders(),
