@@ -688,10 +688,10 @@ async function handleAttachmentUpload() {
                 attachmentId: `att-${Date.now()}`,
                 filename: file.name,
                 fileUrl: fileUrl,
-                label: file.name,      // 🌟 Matches renderItemsTable mapping expectations
-                s3Url: fileUrl,        // 🌟 Matches renderItemsTable mapping expectations
-                name: file.name,       // 🌟 Matches updateModalAttachmentListUI mapping expectations
-                url: fileUrl           // 🌟 Matches updateModalAttachmentListUI mapping expectations
+                label: file.name,      // 🌟 Populates properties to resolve input modal view fields instantly
+                s3Url: fileUrl,        // 🌟 Populates properties to resolve input modal view fields instantly
+                name: file.name,       
+                url: fileUrl           
             };
 
             currentItemAttachments.push(stagedAttachment);
@@ -721,7 +721,15 @@ async function handleAttachmentUpload() {
             if (!dbRes.ok) throw new Error("Failed to link file to database row.");
 
             const dbResult = await dbRes.json();
-            currentItemAttachments = dbResult.attachments || [];
+            const rawAttachments = dbResult.attachments || [];
+
+            // ✨ FIX: Map the backend return variables into explicit s3Url/label keys before rendering
+            currentItemAttachments = rawAttachments.map(att => ({
+                ...att,
+                label: att.filename || att.label,
+                s3Url: att.fileUrl || att.s3Url
+            }));
+
             renderModalAttachments();
             alert(`Upload Success! ${file.name} attached safely to existing record.`);
         }
@@ -733,3 +741,4 @@ async function handleAttachmentUpload() {
         fileInput.value = "";
     }
 }
+
