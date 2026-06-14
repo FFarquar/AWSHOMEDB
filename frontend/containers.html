@@ -72,13 +72,11 @@
                     <thead>
                         <tr>
                             <th>Item Name</th>
-                            <th>Category</th>
-                            <th>Purchased From</th>
+                            <th>Date Purchased</th>
                             <th>Price</th>
                             <th>Warranty Expiry</th>
-                            <th>Paper Location</th>
+                            <th>Notes</th>
                             <th>Attachments</th>
-                            <th id="thItemActions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="itemsTableBody"></tbody>
@@ -189,6 +187,7 @@
 
             <div class="actions">
                 <button class="btn-primary" onclick="saveItem()">Save Item</button>
+                <button class="btn-danger" id="btnDeleteItem" onclick="deleteCurrentItem()" style="display:none;">Delete Item</button>
                 <button class="btn-secondary" onclick="closeItemModal()">Cancel</button>
             </div>
         </div>

@@ -42,8 +42,6 @@
         if (!canManageItems) {
             const btnNewI = document.getElementById("btnNewItem");
             if (btnNewI) btnNewI.style.display = "none";
-            const thItemActions = document.getElementById("thItemActions");
-            if (thItemActions) thItemActions.style.display = "none";
         }
         loadContainers();
     });
@@ -227,6 +225,11 @@
         openDeleteModal("ITEM", itemId, name);
     }
 
+    function deleteCurrentItem() {
+        if (!editingItemId || !canManageItems) return;
+        deleteChildItem(editingItemId);
+    }
+
     async function finalizeContainerDelete(pk) {
         if (window.APP_CONFIG?.USE_MOCK) {
             // ✨ FIXED: Target "containers" array memory directly
@@ -292,7 +295,7 @@
         async function loadItems() {
         const tbody = document.getElementById("itemsTableBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="8">Searching for child records...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6">Searching for child records...</td></tr>`;
 
         if (window.APP_CONFIG?.USE_MOCK) {
             console.log("ℹ️ Fetching mock items collection utilizing apiClient wrapper channels...");
@@ -359,48 +362,43 @@
         tbody.innerHTML = "";
 
         if (childItems.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8">No items stored in this container segment room.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6">No items stored in this container segment room.</td></tr>`;
             return;
         }
 
         childItems.forEach(item => {
-            let linksHtml = "None";
-            if (item.attachments && item.attachments.length > 0) {
-                linksHtml = item.attachments.map(a =>
-                    `<a href="#" onclick="confirmDownload(event, '${(a.s3Url || '').replace(/'/g, "\\'")}', '${(a.label || 'attachment').replace(/'/g, "\\'")}'); return false;">📎 ${a.label}</a>`
-                ).join("<br>");
+            const attCount = Array.isArray(item.attachments) ? item.attachments.length : 0;
+            const noteCount = item.noteCount !== undefined ? item.noteCount : "-";
+
+            const row = document.createElement("tr");
+            row.style.cursor = canManageItems ? "pointer" : "default";
+            row.innerHTML = `
+                <td><strong>${item.itemName || "Unnamed Asset"}</strong></td>
+                <td>${item.purchaseDate || "N/A"}</td>
+                <td>$${Number(item.purchasePrice || 0).toLocaleString()}</td>
+                <td>${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
+                <td>${noteCount}</td>
+                <td>${attCount}</td>
+            `;
+
+            if (canManageItems) {
+                row.addEventListener("click", () => openItemEdit(item.itemId));
             }
 
-            // ✨ FIXED: Made Item Edit button exactly the same height layout as the Delete button
-            const actions = canManageItems 
-                ? `<td>
-                    <button onclick="openItemEdit('${item.itemId}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Edit</button>
-                    <button class="btn-danger" onclick="deleteChildItem('${item.itemId}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Delete</button>
-                   </td>`
-                : "";
-
-            tbody.innerHTML += `
-            <tr>
-                <td><strong>${item.itemName || "Unnamed Asset"}</strong></td>
-                <td>${item.category || "General"}</td>
-                <td>${item.purchasedFrom || "Unknown"}</td>
-                <td>$${Number(item.purchasePrice || 0).toLocaleString()}</td>
-                <td>${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : item.warrantyExpiryDate}</td>
-                <td>${item.physicalPaperStorageLocation || "N/A"}</td>
-                <td>${linksHtml}</td>
-                ${actions}
-            </tr>`;
+            tbody.appendChild(row);
         });
     }
 
      function openItemCreate() {
-        if (!canManageItems) return; // ✨ FIXED
+        if (!canManageItems) return;
         editingItemId = null;
         currentItemAttachments = [];
         document.getElementById("itemModalTitle").innerText = "Add New Item Asset";
         clearItemForm();
         renderModalAttachments();
         document.getElementById("notesSection").style.display = "none";
+        const btnDelete = document.getElementById("btnDeleteItem");
+        if (btnDelete) btnDelete.style.display = "none";
         document.getElementById("itemModal").style.display = "flex";
     }
 
@@ -434,6 +432,8 @@
         currentNoteAttachments = [];
         document.getElementById("notesSection").style.display = "block";
         document.getElementById("noteForm").style.display = "none";
+        const btnDelete = document.getElementById("btnDeleteItem");
+        if (btnDelete) btnDelete.style.display = canManageItems ? "inline-block" : "none";
         loadNotes();
 
         document.getElementById("itemModal").style.display = "flex";
@@ -608,16 +608,39 @@
         if (window.APP_CONFIG?.USE_MOCK) {
             childItems = childItems.filter(i => i.itemId !== itemId);
             renderItemsTable();
+            showSuccessToast("Item and related data deleted.");
             return;
         }
 
         try {
+            // Cascade: delete all related notes first
+            try {
+                const notesRes = await fetch(
+                    `${API}/containers/${activeShortContainerId}/items/${itemId}/notes`,
+                    { method: "GET", headers: authHeaders() }
+                );
+                if (notesRes.ok) {
+                    const notes = await notesRes.json();
+                    if (Array.isArray(notes)) {
+                        await Promise.all(notes.map(note =>
+                            fetch(`${API}/containers/${activeShortContainerId}/items/${itemId}/notes/${note.noteId}`, {
+                                method: "DELETE",
+                                headers: authHeaders()
+                            })
+                        ));
+                    }
+                }
+            } catch (noteErr) {
+                console.warn("Could not cascade delete notes:", noteErr);
+            }
+
             const res = await fetch(`${API}/containers/${activeShortContainerId}/items/${itemId}`, {
                 method: "DELETE",
                 headers: authHeaders()
             });
             if (!res.ok) throw new Error(`Server error: ${res.status}`);
             await loadItems();
+            showSuccessToast("Item and related data deleted successfully.");
         } catch (err) {
             alert(`Delete transaction failure: ${err.message}`);
         }
@@ -664,10 +687,13 @@
     function openDeleteModal(type, id, displayName) {
         deleteTargetType = type;
         deleteTargetId = id;
-        
+
         const messageElement = document.getElementById("deleteModalMessage");
-        messageElement.innerHTML = `Are you sure you want to permanently purge <br><strong>"${displayName}"</strong>?`;
-        
+        const cascade = type === "ITEM"
+            ? `<br><small style="color:#888;">All related notes and attachments will also be deleted.</small>`
+            : "";
+        messageElement.innerHTML = `Are you sure you want to permanently purge <br><strong>"${displayName}"</strong>?${cascade}`;
+
         document.getElementById("btnConfirmDelete").onclick = executeSystemDelete;
         document.getElementById("deleteConfirmModal").style.display = "flex";
     }
@@ -681,12 +707,13 @@
     async function executeSystemDelete() {
         const targetId = deleteTargetId;
         const targetType = deleteTargetType;
-        
-        closeDeleteModal(); 
+
+        closeDeleteModal();
 
         if (targetType === "CONTAINER") {
             await finalizeContainerDelete(targetId);
         } else if (targetType === "ITEM") {
+            closeItemModal();
             await finalizeItemDelete(targetId);
         } else if (targetType === "NOTE") {
             await finalizeNoteDelete(targetId);
