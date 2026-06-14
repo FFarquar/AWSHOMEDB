@@ -326,6 +326,95 @@ Resources:
             Method: DELETE
 
   # =========================
+  # PARTS
+  # =========================
+
+  PartCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/parts/parts-create.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PostPart:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/parts
+            Method: POST
+
+  PartsListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/parts/parts-list.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetParts:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/parts
+            Method: GET
+
+  PartGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/parts/parts-get.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetPartById:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/parts/{partId}
+            Method: GET
+
+  PartUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/parts/parts-update.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PutPart:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/parts/{partId}
+            Method: PUT
+
+  PartDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/parts/parts-delete.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        DeletePart:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/parts/{partId}
+            Method: DELETE
+
+  # =========================
   # LOGIN (PUBLIC)
   # =========================
 

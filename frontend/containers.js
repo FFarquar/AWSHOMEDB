@@ -19,6 +19,10 @@
     let editingNoteId = null;      // noteId of the note being edited (null = adding new)
     let currentNoteAttachments = []; // Attachments staged for the note form
 
+    let currentItemParts = [];       // Parts collection for the currently open item
+    let editingPartId = null;        // partId of the part being edited (null = adding new)
+    let currentPartAttachments = []; // Attachments staged for the part form
+
     let editingId = null;       // Tracks primary container PK edits
     let editingItemId = null;   // Tracks child item ID edits
     let activeShortContainerId = null; // Tracks active parent container (short form ID)
@@ -439,6 +443,7 @@
         clearItemForm();
         renderModalAttachments();
         document.getElementById("notesSection").style.display = "none";
+        document.getElementById("partsSection").style.display = "none";
         const btnDelete = document.getElementById("btnDeleteItem");
         if (btnDelete) btnDelete.style.display = "none";
         document.getElementById("itemModal").style.display = "flex";
@@ -474,9 +479,18 @@
         currentNoteAttachments = [];
         document.getElementById("notesSection").style.display = "block";
         document.getElementById("noteForm").style.display = "none";
+
+        // Show parts section and load existing parts for this item
+        currentItemParts = [];
+        editingPartId = null;
+        currentPartAttachments = [];
+        document.getElementById("partsSection").style.display = "block";
+        document.getElementById("partForm").style.display = "none";
+
         const btnDelete = document.getElementById("btnDeleteItem");
         if (btnDelete) btnDelete.style.display = canManageItems ? "inline-block" : "none";
         loadNotes();
+        loadParts();
 
         document.getElementById("itemModal").style.display = "flex";
     }
@@ -488,6 +502,10 @@
         editingNoteId = null;
         currentNoteAttachments = [];
         document.getElementById("noteForm").style.display = "none";
+        currentItemParts = [];
+        editingPartId = null;
+        currentPartAttachments = [];
+        document.getElementById("partForm").style.display = "none";
         clearItemForm();
     }
 
@@ -676,6 +694,41 @@
                 console.warn("Could not cascade delete notes:", noteErr);
             }
 
+            // Cascade: delete all related parts (and their S3 attachments) next
+            try {
+                const partsRes = await fetch(
+                    `${API}/containers/${activeShortContainerId}/items/${itemId}/parts`,
+                    { method: "GET", headers: authHeaders() }
+                );
+                if (partsRes.ok) {
+                    const parts = await partsRes.json();
+                    if (Array.isArray(parts)) {
+                        await Promise.all(parts.map(async part => {
+                            // Remove each part attachment from S3 before deleting the part record
+                            if (Array.isArray(part.attachments)) {
+                                await Promise.all(part.attachments.map(att =>
+                                    fetch(`${API}/attachments/delete`, {
+                                        method: "POST",
+                                        headers: authHeaders(),
+                                        body: JSON.stringify({
+                                            pk: `CONTAINER#${activeShortContainerId.toUpperCase()}`,
+                                            sk: `PART#${itemId}#${part.partId}`,
+                                            attachmentId: att.attachmentId
+                                        })
+                                    }).catch(e => console.warn("Could not delete part attachment:", e))
+                                ));
+                            }
+                            return fetch(`${API}/containers/${activeShortContainerId}/items/${itemId}/parts/${part.partId}`, {
+                                method: "DELETE",
+                                headers: authHeaders()
+                            });
+                        }));
+                    }
+                }
+            } catch (partErr) {
+                console.warn("Could not cascade delete parts:", partErr);
+            }
+
             const res = await fetch(`${API}/containers/${activeShortContainerId}/items/${itemId}`, {
                 method: "DELETE",
                 headers: authHeaders()
@@ -732,7 +785,7 @@
 
         const messageElement = document.getElementById("deleteModalMessage");
         const cascade = type === "ITEM"
-            ? `<br><small style="color:#888;">All related notes and attachments will also be deleted.</small>`
+            ? `<br><small style="color:#888;">All related notes, parts, and attachments will also be deleted.</small>`
             : "";
         messageElement.innerHTML = `Are you sure you want to permanently purge <br><strong>"${displayName}"</strong>?${cascade}`;
 
@@ -759,6 +812,8 @@
             await finalizeItemDelete(targetId);
         } else if (targetType === "NOTE") {
             await finalizeNoteDelete(targetId);
+        } else if (targetType === "PART") {
+            await finalizePartDelete(targetId);
         }
     }
 
@@ -1239,5 +1294,313 @@ async function finalizeNoteDelete(noteId) {
         showSuccessToast("Note deleted successfully.");
     } catch (err) {
         alert(`Failed to delete note: ${err.message}`);
+    }
+}
+
+// ==========================================
+// SECTION 5: PARTS LOGIC METHODS
+// ==========================================
+
+async function loadParts() {
+    if (!editingItemId || !activeShortContainerId) return;
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        currentItemParts = [];
+        renderPartsSection();
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/containers/${activeShortContainerId}/items/${editingItemId}/parts`, {
+            method: "GET",
+            headers: authHeaders()
+        });
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+        const data = await res.json();
+        currentItemParts = Array.isArray(data) ? data.map(p => ({
+            ...p,
+            attachments: Array.isArray(p.attachments) ? p.attachments.map(a => ({
+                ...a,
+                label: a.filename || a.label || "File",
+                s3Url: a.fileUrl || a.s3Url || ""
+            })) : []
+        })) : [];
+    } catch (err) {
+        console.error("💥 Failed to load parts:", err);
+        currentItemParts = [];
+    }
+    renderPartsSection();
+}
+
+function renderPartsSection() {
+    const list = document.getElementById("partsList");
+    if (!list) return;
+
+    if (currentItemParts.length === 0) {
+        list.innerHTML = `<p style="color:#888; font-style:italic; font-size:13px; margin:0 0 6px 0;">No parts recorded yet.</p>`;
+        return;
+    }
+
+    list.innerHTML = currentItemParts.map(part => {
+        const attachLinks = part.attachments && part.attachments.length > 0
+            ? part.attachments.map(a =>
+                `<a href="#" class="note-att-link" onclick="confirmDownload(event, '${(a.s3Url || "").replace(/'/g, "\\'")}', '${(a.label || "attachment").replace(/'/g, "\\'")}'); return false;">📎 ${a.label}</a>`
+              ).join("")
+            : "";
+
+        const costDisplay = part.cost != null ? `$${Number(part.cost).toLocaleString()}` : "";
+        const meta = [part.purchaseDate, costDisplay, part.purchasedFrom, part.warrantyPeriod ? `Warranty: ${part.warrantyPeriod}` : ""]
+            .filter(Boolean).join(" · ");
+
+        return `
+            <div class="note-card" onclick="openEditPart('${part.partId}')">
+                <div class="note-date">${part.name || "Unnamed Part"}</div>
+                ${meta ? `<div class="note-desc" style="font-size:12px; color:#555;">${meta}</div>` : ""}
+                ${attachLinks ? `<div class="note-links">${attachLinks}</div>` : ""}
+            </div>`;
+    }).join("");
+}
+
+function openAddPart() {
+    editingPartId = null;
+    currentPartAttachments = [];
+    document.getElementById("partFormTitle").innerText = "Add Part";
+    document.getElementById("partName").value = "";
+    document.getElementById("partPurchaseDate").value = "";
+    document.getElementById("partCost").value = "";
+    document.getElementById("partPurchasedFrom").value = "";
+    document.getElementById("partWarrantyPeriod").value = "";
+    renderPartAttachmentList();
+    const btnDel = document.getElementById("btnDeletePartInForm");
+    if (btnDel) btnDel.style.display = "none";
+    document.getElementById("partForm").style.display = "block";
+}
+
+function openEditPart(partId) {
+    const part = currentItemParts.find(p => p.partId === partId);
+    if (!part) return;
+
+    editingPartId = partId;
+    currentPartAttachments = Array.isArray(part.attachments) ? [...part.attachments] : [];
+
+    document.getElementById("partFormTitle").innerText = "Edit Part";
+    document.getElementById("partName").value = part.name || "";
+    document.getElementById("partPurchaseDate").value = part.purchaseDate || "";
+    document.getElementById("partCost").value = part.cost != null ? part.cost : "";
+    document.getElementById("partPurchasedFrom").value = part.purchasedFrom || "";
+    document.getElementById("partWarrantyPeriod").value = part.warrantyPeriod || "";
+    renderPartAttachmentList();
+    const btnDel = document.getElementById("btnDeletePartInForm");
+    if (btnDel) btnDel.style.display = "inline-block";
+    document.getElementById("partForm").style.display = "block";
+}
+
+function closePartForm() {
+    document.getElementById("partForm").style.display = "none";
+    editingPartId = null;
+    currentPartAttachments = [];
+}
+
+function deletePartFromForm() {
+    if (!editingPartId) return;
+    const partIdToDelete = editingPartId;
+    closePartForm();
+    confirmDeletePart(partIdToDelete);
+}
+
+function renderPartAttachmentList() {
+    const list = document.getElementById("partAttachmentList");
+    if (!list) return;
+
+    if (!currentPartAttachments || currentPartAttachments.length === 0) {
+        list.innerHTML = `<li style="color:#888; font-style:italic; list-style:none; margin-left:-20px; font-size:12px;">No files attached.</li>`;
+        return;
+    }
+
+    list.innerHTML = currentPartAttachments.map((att, idx) => `
+        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:3px 6px; border-radius:3px; border:1px solid #eee;">
+            <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
+            <button type="button" onclick="removePartAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:1px 5px; font-size:11px; cursor:pointer; font-weight:bold;">X</button>
+        </li>
+    `).join("");
+}
+
+function removePartAttachmentFromState(idx) {
+    currentPartAttachments.splice(idx, 1);
+    renderPartAttachmentList();
+}
+
+async function handlePartAttachmentUpload() {
+    const fileInput = document.getElementById("partFilePicker");
+    const progressStatus = document.getElementById("partUploadProgress");
+
+    if (!fileInput || !fileInput.files.length) {
+        return alert("Please select a file first.");
+    }
+
+    const file = fileInput.files[0];
+    if (progressStatus) { progressStatus.style.display = "block"; progressStatus.innerText = "⏳ Processing..."; }
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        const localUrl = URL.createObjectURL(file);
+        currentPartAttachments.push({
+            attachmentId: "ATT#" + Date.now(),
+            filename: file.name,
+            fileUrl: localUrl,
+            label: file.name,
+            s3Url: localUrl
+        });
+        renderPartAttachmentList();
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+        showSuccessToast(`Staged "${file.name}" for part.`);
+        return;
+    }
+
+    try {
+        if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const res = await fetch(presignPath, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to get presigned URL.");
+        const { uploadUrl, fileUrl } = await res.json();
+
+        if (progressStatus) progressStatus.innerText = "⏳ Uploading to S3...";
+        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+        if (!uploadRes.ok) throw new Error("S3 upload failed.");
+
+        if (!editingPartId) {
+            // New part: stage locally until part is saved
+            currentPartAttachments.push({
+                attachmentId: `att-${Date.now()}`,
+                filename: file.name,
+                fileUrl,
+                label: file.name,
+                s3Url: fileUrl
+            });
+            renderPartAttachmentList();
+            showSuccessToast(`Staged "${file.name}"! Will save with part.`);
+        } else {
+            // Existing part: persist attachment to DB immediately
+            if (progressStatus) progressStatus.innerText = "⏳ Logging metadata to database...";
+            const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
+            const dbPayload = {
+                pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
+                sk: `PART#${editingItemId}#${editingPartId}`,
+                filename: file.name,
+                fileUrl
+            };
+            const dbRes = await fetch(`${API}/attachments`, {
+                method: "POST",
+                headers: { ...authHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify(dbPayload)
+            });
+            if (!dbRes.ok) throw new Error("Failed to link file to part record.");
+            const dbResult = await dbRes.json();
+            currentPartAttachments = (dbResult.attachments || []).map(a => ({
+                ...a,
+                label: a.filename || a.label,
+                s3Url: a.fileUrl || a.s3Url
+            }));
+            renderPartAttachmentList();
+            showSuccessToast(`Uploaded "${file.name}" to part!`);
+        }
+    } catch (err) {
+        alert(`Part attachment error: ${err.message}`);
+    } finally {
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+    }
+}
+
+async function savePart() {
+    const name = document.getElementById("partName").value.trim();
+    if (!name) return alert("Name is required.");
+
+    const cleanedAttachments = currentPartAttachments.map(att => ({
+        attachmentId: att.attachmentId || `att-${Date.now()}`,
+        filename: att.filename || att.label || "File",
+        fileUrl: att.fileUrl || att.s3Url || "",
+        uploadedAt: att.uploadedAt || new Date().toISOString()
+    }));
+
+    const payload = {
+        name,
+        purchaseDate: document.getElementById("partPurchaseDate").value || null,
+        cost: document.getElementById("partCost").value !== "" ? Number(document.getElementById("partCost").value) : null,
+        purchasedFrom: document.getElementById("partPurchasedFrom").value.trim() || null,
+        warrantyPeriod: document.getElementById("partWarrantyPeriod").value.trim() || null,
+        attachments: cleanedAttachments
+    };
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        if (editingPartId) {
+            const idx = currentItemParts.findIndex(p => p.partId === editingPartId);
+            if (idx !== -1) Object.assign(currentItemParts[idx], payload);
+        } else {
+            const generatedPartId = "PART" + Date.now();
+            currentItemParts.push({
+                PK: `CONTAINER#${activeShortContainerId}`,
+                SK: `PART#${editingItemId}#${generatedPartId}`,
+                entityType: "PART",
+                containerId: activeShortContainerId,
+                itemId: editingItemId,
+                partId: generatedPartId,
+                createdDate: new Date().toISOString().split("T")[0],
+                ...payload
+            });
+        }
+        closePartForm();
+        renderPartsSection();
+        showSuccessToast("Part saved!");
+        return;
+    }
+
+    try {
+        let path = `${API}/containers/${activeShortContainerId}/items/${editingItemId}/parts`;
+        let method = "POST";
+        if (editingPartId) {
+            path += `/${editingPartId}`;
+            method = "PUT";
+        }
+
+        const res = await fetch(path, {
+            method,
+            headers: authHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        closePartForm();
+        await loadParts();
+        showSuccessToast("Part saved successfully!");
+    } catch (err) {
+        alert(`Failed to save part: ${err.message}`);
+    }
+}
+
+function confirmDeletePart(partId) {
+    const part = currentItemParts.find(p => p.partId === partId);
+    const preview = part ? (part.name || "").substring(0, 50) : "This Part";
+    openDeleteModal("PART", partId, preview);
+}
+
+async function finalizePartDelete(partId) {
+    if (window.APP_CONFIG?.USE_MOCK) {
+        currentItemParts = currentItemParts.filter(p => p.partId !== partId);
+        renderPartsSection();
+        showSuccessToast("Part deleted.");
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `${API}/containers/${activeShortContainerId}/items/${editingItemId}/parts/${partId}`,
+            { method: "DELETE", headers: authHeaders() }
+        );
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+        await loadParts();
+        showSuccessToast("Part deleted successfully.");
+    } catch (err) {
+        alert(`Failed to delete part: ${err.message}`);
     }
 }

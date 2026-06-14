@@ -189,6 +189,60 @@
                 </div>
             </div>
 
+            <!-- 🔩 PARTS COLLECTION SECTION (visible only when editing an existing item) -->
+            <div id="partsSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <label><strong>Parts Collection</strong></label>
+                    <button type="button" onclick="openAddPart()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">+ Add Part</button>
+                </div>
+
+                <!-- Existing parts render here -->
+                <div id="partsList" style="max-height:220px; overflow-y:auto; margin-bottom:8px;"></div>
+
+                <!-- Inline add/edit part form -->
+                <div id="partForm" style="display:none; background:#f0f4ff; padding:12px; border-radius:6px; border:1px solid #c0cfe8; margin-top:8px;">
+                    <strong id="partFormTitle" style="display:block; margin-bottom:8px; font-size:13px;">Add Part</strong>
+
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" id="partName" />
+                    </div>
+                    <div class="form-group">
+                        <label>Purchase Date</label>
+                        <input type="date" id="partPurchaseDate" />
+                    </div>
+                    <div class="form-group">
+                        <label>Cost ($)</label>
+                        <input type="number" id="partCost" min="0" step="0.01" />
+                    </div>
+                    <div class="form-group">
+                        <label>Purchased From</label>
+                        <input type="text" id="partPurchasedFrom" />
+                    </div>
+                    <div class="form-group">
+                        <label>Warranty Period</label>
+                        <input type="text" id="partWarrantyPeriod" placeholder="e.g. 2 years" />
+                    </div>
+
+                    <!-- Part attachments sub-section -->
+                    <div style="margin-top:8px;">
+                        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Part Attachments</label>
+                        <div style="display:flex; gap:8px; align-items:center; background:#fff; padding:8px; border-radius:4px; border:1px solid #e0e0e0;">
+                            <input type="file" id="partFilePicker" accept="image/*,application/pdf" style="font-size:12px; flex:1;" />
+                            <button type="button" onclick="handlePartAttachmentUpload()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">Upload</button>
+                        </div>
+                        <div id="partUploadProgress" style="display:none; font-size:11px; color:#666; font-style:italic; margin-top:4px;">⏳ Uploading...</div>
+                        <ul id="partAttachmentList" style="padding-left:20px; font-size:12px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                        <button type="button" onclick="savePart()" style="min-height:30px; padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;">Save Part</button>
+                        <button type="button" onclick="closePartForm()" style="min-height:30px; padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
+                        <button type="button" id="btnDeletePartInForm" onclick="deletePartFromForm()" style="display:none; min-height:30px; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Delete Part</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="actions">
                 <button class="btn-primary" onclick="saveItem()">Save Item</button>
                 <button class="btn-danger" id="btnDeleteItem" onclick="deleteCurrentItem()" style="display:none;">Delete Item</button>
