@@ -606,11 +606,28 @@
     // SECTION 3: SYSTEM UTILITIES METHODS
     // ==========================================
 
-    function confirmDownload(event, url, label) {
+    async function confirmDownload(event, url, label) {
         event.preventDefault();
         if (!confirm(`Download "${label}"?`)) return;
+
+        let downloadUrl = url;
+
+        if (!window.APP_CONFIG?.USE_MOCK && url.includes('.amazonaws.com/')) {
+            try {
+                const s3Key = new URL(url).pathname.slice(1);
+                const res = await fetch(`${API}/attachments/download?key=${encodeURIComponent(s3Key)}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error(`Presign failed: ${res.status}`);
+                ({ downloadUrl } = await res.json());
+            } catch (err) {
+                alert(`Could not prepare download: ${err.message}`);
+                return;
+            }
+        }
+
         const a = document.createElement('a');
-        a.href = url;
+        a.href = downloadUrl;
         a.download = label;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';

@@ -378,6 +378,27 @@ Resources:
             Method: GET
             PayloadFormatVersion: "1.0"
 
+  GetDownloadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/attachments/get-download-url.handler
+      Runtime: nodejs24.x
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref AttachmentsBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AttachmentsBucket
+      Events:
+        GetDownload:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /attachments/download
+            Method: GET
+            PayloadFormatVersion: "1.0"
+
   # =========================================================================
   # 📁 Generic Attachment Logger Lambda Function
   # =========================================================================
