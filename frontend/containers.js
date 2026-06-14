@@ -37,12 +37,22 @@
             const thActions = document.getElementById("thActions");
             if (thActions) thActions.style.display = "none";
         }
-        
+
         // 2. Lock down Item actions ONLY if they lack item permissions (e.g. GUEST)
         if (!canManageItems) {
             const btnNewI = document.getElementById("btnNewItem");
             if (btnNewI) btnNewI.style.display = "none";
         }
+
+        // 3. Display build version in header
+        fetch("version.json")
+            .then(r => r.json())
+            .then(v => {
+                const badge = document.getElementById("versionBadge");
+                if (badge && v.build) badge.textContent = `build #${v.build}`;
+            })
+            .catch(() => {});
+
         loadContainers();
     });
 
@@ -986,15 +996,15 @@ function renderNotesSection() {
     list.innerHTML = currentItemNotes.map(note => {
         const attachLinks = note.attachments && note.attachments.length > 0
             ? note.attachments.map(a =>
-                `<a href="#" onclick="confirmDownload(event, '${(a.s3Url || "").replace(/'/g, "\\'")}', '${(a.label || "attachment").replace(/'/g, "\\'")}'); return false;" style="font-size:11px; color:#0073bb; margin-right:6px;">📎 ${a.label}</a>`
+                `<a href="#" class="note-att-link" onclick="confirmDownload(event, '${(a.s3Url || "").replace(/'/g, "\\'")}', '${(a.label || "attachment").replace(/'/g, "\\'")}'); return false;">📎 ${a.label}</a>`
               ).join("")
             : "";
 
         return `
             <div class="note-card" onclick="openEditNote('${note.noteId}')">
-                <div style="font-size:11px; color:#888; margin-bottom:3px;">${note.date || "No date"}</div>
-                <div style="font-size:13px; line-height:1.4; word-wrap:break-word;">${note.description || ""}</div>
-                ${attachLinks ? `<div style="margin-top:4px;">${attachLinks}</div>` : ""}
+                <div class="note-date">${note.date || "No date"}</div>
+                <div class="note-desc">${note.description || ""}</div>
+                ${attachLinks ? `<div class="note-links">${attachLinks}</div>` : ""}
             </div>`;
     }).join("");
 }

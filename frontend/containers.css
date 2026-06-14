@@ -171,11 +171,59 @@
         border-color: #c0cfe8;
     }
 
-    @media (max-width: 600px) {
+    .note-date {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 3px;
+    }
+
+    .note-desc {
+        font-size: 14px;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .note-links {
+        margin-top: 4px;
+    }
+
+    .note-att-link {
+        font-size: 12px;
+        color: #0073bb;
+        margin-right: 6px;
+        text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+
+        body {
+            font-size: 16px;
+        }
+
+        header {
+            font-size: 16px;
+        }
 
         th,
         td {
-            font-size: 13px;
+            font-size: 15px;
+            padding: 12px 8px;
+        }
+
+        label {
+            font-size: 15px;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px; /* prevents iOS auto-zoom on focus */
+            padding: 12px 10px;
+        }
+
+        button {
+            font-size: 15px;
+            min-height: 44px;
         }
 
         .toolbar button {
@@ -186,19 +234,16 @@
             flex-direction: column;
         }
 
-        input,
-        select,
-        textarea {
-            font-size: 16px; /* prevents iOS auto-zoom on focus */
-        }
-
-        label {
-            font-size: 13px;
+        .modal {
+            align-items: flex-end;
+            padding: 0;
         }
 
         .modal-content {
-            padding: 12px 10px;
-            max-height: 95vh;
+            padding: 16px 14px;
+            max-width: 100%;
+            max-height: 92vh;
+            border-radius: 14px 14px 0 0;
         }
 
         .actions {
@@ -209,7 +254,31 @@
             width: 100%;
         }
 
+        h2 {
+            font-size: 20px;
+        }
+
         h3 {
-            font-size: 17px;
+            font-size: 18px;
+        }
+
+        .info-card {
+            font-size: 15px;
+        }
+
+        .note-card {
+            padding: 12px 14px;
+        }
+
+        .note-date {
+            font-size: 14px;
+        }
+
+        .note-desc {
+            font-size: 16px;
+        }
+
+        .note-att-link {
+            font-size: 14px;
         }
     }
