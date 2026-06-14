@@ -79,6 +79,7 @@
                             <th>Price</th>
                             <th>Warranty Expiry</th>
                             <th>Notes</th>
+                            <th>Parts</th>
                             <th>Attachments</th>
                         </tr>
                     </thead>
@@ -136,22 +137,22 @@
                 <!-- 🚀 FILE UPLOADER ENGINE ADDITION -->
                 <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px; background:#f9f9f9; padding:10px; border-radius:4px; border:1px solid #e0e0e0;">
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="file" id="itemFilePicker" accept="image/*,application/pdf" style="font-size:12px; flex:1;" />
-                        <button type="button" id="uploadFileBtn" onclick="handleAttachmentUpload()" style="min-height:30px; padding:0 12px; font-weight:bold; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer;">Upload File</button>
+                        <input type="file" id="itemFilePicker" accept="image/*,application/pdf" style="flex:1;" />
+                        <button type="button" id="uploadFileBtn" onclick="handleAttachmentUpload()" style="padding:0 12px; font-weight:bold; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer;">Upload File</button>
                     </div>
                     <div id="uploadProgressBar" style="display:none; font-size:11px; color:#666; font-style:italic;">⏳ Contacting AWS S3 Storage Gateway...</div>
                 </div>
 
                 <!-- Active file links show up automatically in this list below -->
-                <ul id="modalAttachmentList"
-                    style="padding-left:20px; font-size:13px; margin-top:12px; max-height:100px; overflow-y:auto;"></ul>
+                <ul id="modalAttachmentList" class="attachment-list"
+                    style="padding-left:20px; margin-top:12px; max-height:100px; overflow-y:auto;"></ul>
             </div>
 
             <!-- 📝 NOTES COLLECTION SECTION (visible only when editing an existing item) -->
             <div id="notesSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Notes Collection</strong></label>
-                    <button type="button" onclick="openAddNote()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">+ Add Note</button>
+                    <button type="button" onclick="openAddNote()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Note</button>
                 </div>
 
                 <!-- Existing notes render here -->
@@ -159,7 +160,7 @@
 
                 <!-- Inline add/edit note form -->
                 <div id="noteForm" style="display:none; background:#f0f4ff; padding:12px; border-radius:6px; border:1px solid #c0cfe8; margin-top:8px;">
-                    <strong id="noteFormTitle" style="display:block; margin-bottom:8px; font-size:13px;">Add Note</strong>
+                    <strong id="noteFormTitle" style="display:block; margin-bottom:8px;">Add Note</strong>
 
                     <div class="form-group">
                         <label>Date</label>
@@ -172,19 +173,19 @@
 
                     <!-- Note attachments sub-section -->
                     <div style="margin-top:8px;">
-                        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Note Attachments</label>
+                        <label style="font-weight:bold; display:block; margin-bottom:4px;">Note Attachments</label>
                         <div style="display:flex; gap:8px; align-items:center; background:#fff; padding:8px; border-radius:4px; border:1px solid #e0e0e0;">
-                            <input type="file" id="noteFilePicker" accept="image/*,application/pdf" style="font-size:12px; flex:1;" />
-                            <button type="button" onclick="handleNoteAttachmentUpload()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">Upload</button>
+                            <input type="file" id="noteFilePicker" accept="image/*,application/pdf" style="flex:1;" />
+                            <button type="button" onclick="handleNoteAttachmentUpload()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Upload</button>
                         </div>
                         <div id="noteUploadProgress" style="display:none; font-size:11px; color:#666; font-style:italic; margin-top:4px;">⏳ Uploading...</div>
-                        <ul id="noteAttachmentList" style="padding-left:20px; font-size:12px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
+                        <ul id="noteAttachmentList" class="attachment-list" style="padding-left:20px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
                     </div>
 
                     <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                        <button type="button" onclick="saveNote()" style="min-height:30px; padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;">Save Note</button>
-                        <button type="button" onclick="closeNoteForm()" style="min-height:30px; padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
-                        <button type="button" id="btnDeleteNoteInForm" onclick="deleteNoteFromForm()" style="display:none; min-height:30px; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Delete Note</button>
+                        <button type="button" onclick="saveNote()" style="padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Save Note</button>
+                        <button type="button" onclick="closeNoteForm()" style="padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <button type="button" id="btnDeleteNoteInForm" onclick="deleteNoteFromForm()" style="display:none; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer;">Delete Note</button>
                     </div>
                 </div>
             </div>
@@ -193,7 +194,7 @@
             <div id="partsSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Parts Collection</strong></label>
-                    <button type="button" onclick="openAddPart()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">+ Add Part</button>
+                    <button type="button" onclick="openAddPart()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Part</button>
                 </div>
 
                 <!-- Existing parts render here -->
@@ -201,7 +202,7 @@
 
                 <!-- Inline add/edit part form -->
                 <div id="partForm" style="display:none; background:#f0f4ff; padding:12px; border-radius:6px; border:1px solid #c0cfe8; margin-top:8px;">
-                    <strong id="partFormTitle" style="display:block; margin-bottom:8px; font-size:13px;">Add Part</strong>
+                    <strong id="partFormTitle" style="display:block; margin-bottom:8px;">Add Part</strong>
 
                     <div class="form-group">
                         <label>Name *</label>
@@ -220,25 +221,25 @@
                         <input type="text" id="partPurchasedFrom" />
                     </div>
                     <div class="form-group">
-                        <label>Warranty Period</label>
-                        <input type="text" id="partWarrantyPeriod" placeholder="e.g. 2 years" />
+                        <label>Warranty Expiry Date</label>
+                        <input type="date" id="partWarrantyPeriod" />
                     </div>
 
                     <!-- Part attachments sub-section -->
                     <div style="margin-top:8px;">
-                        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Part Attachments</label>
+                        <label style="font-weight:bold; display:block; margin-bottom:4px;">Part Attachments</label>
                         <div style="display:flex; gap:8px; align-items:center; background:#fff; padding:8px; border-radius:4px; border:1px solid #e0e0e0;">
-                            <input type="file" id="partFilePicker" accept="image/*,application/pdf" style="font-size:12px; flex:1;" />
-                            <button type="button" onclick="handlePartAttachmentUpload()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">Upload</button>
+                            <input type="file" id="partFilePicker" accept="image/*,application/pdf" style="flex:1;" />
+                            <button type="button" onclick="handlePartAttachmentUpload()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Upload</button>
                         </div>
                         <div id="partUploadProgress" style="display:none; font-size:11px; color:#666; font-style:italic; margin-top:4px;">⏳ Uploading...</div>
-                        <ul id="partAttachmentList" style="padding-left:20px; font-size:12px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
+                        <ul id="partAttachmentList" class="attachment-list" style="padding-left:20px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
                     </div>
 
                     <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                        <button type="button" onclick="savePart()" style="min-height:30px; padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;">Save Part</button>
-                        <button type="button" onclick="closePartForm()" style="min-height:30px; padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
-                        <button type="button" id="btnDeletePartInForm" onclick="deletePartFromForm()" style="display:none; min-height:30px; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Delete Part</button>
+                        <button type="button" onclick="savePart()" style="padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Save Part</button>
+                        <button type="button" onclick="closePartForm()" style="padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+                        <button type="button" id="btnDeletePartInForm" onclick="deletePartFromForm()" style="display:none; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer;">Delete Part</button>
                     </div>
                 </div>
             </div>

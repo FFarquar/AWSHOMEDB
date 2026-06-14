@@ -391,6 +391,7 @@
                 <td data-label="Price">$${Number(item.purchasePrice || 0).toLocaleString()}</td>
                 <td data-label="Warranty">${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
                 <td data-label="Notes" data-note-count="${item.itemId}">...</td>
+                <td data-label="Parts" data-part-count="${item.itemId}">...</td>
                 <td data-label="Attachments">${attCount}</td>
             `;
 
@@ -402,6 +403,30 @@
         });
 
         loadNoteCountsAsync();
+        loadPartCountsAsync();
+    }
+
+    async function loadPartCountsAsync() {
+        await Promise.all(childItems.map(async item => {
+            const cell = document.querySelector(`td[data-part-count="${item.itemId}"]`);
+            if (!cell) return;
+            try {
+                let count = 0;
+                if (!window.APP_CONFIG?.USE_MOCK) {
+                    const res = await fetch(
+                        `${API}/containers/${activeShortContainerId}/items/${item.itemId}/parts`,
+                        { method: "GET", headers: authHeaders() }
+                    );
+                    if (res.ok) {
+                        const parts = await res.json();
+                        count = Array.isArray(parts) ? parts.length : 0;
+                    }
+                }
+                cell.textContent = count;
+            } catch {
+                cell.textContent = "-";
+            }
+        }));
     }
 
     async function loadNoteCountsAsync() {

@@ -199,6 +199,11 @@
         text-decoration: none;
     }
 
+    /* --- Attachment lists --- */
+    .attachment-list {
+        font-size: 13px;
+    }
+
     /* --- Version badge --- */
     #versionBadge {
         font-size: 13px;
@@ -385,6 +390,10 @@
         .note-att-link {
             font-size: 18px;
         }
+
+        .attachment-list {
+            font-size: 20px;
+        }
     }
 
     /* ============================================================
@@ -449,4 +458,8 @@
         .note-date { font-size: 28px; }
         .note-desc { font-size: 34px; }
         .note-att-link { font-size: 28px; }
+
+        .attachment-list {
+            font-size: 30px;
+        }
     }
