@@ -386,3 +386,67 @@
             font-size: 18px;
         }
     }
+
+    /* ============================================================
+       PORTRAIT PHONES  —  25% larger than landscape sizes above
+       orientation: portrait targets only upright phone usage
+       ============================================================ */
+    @media (max-width: 1024px) and (orientation: portrait) {
+
+        body { font-size: 28px; }
+        header { font-size: 25px; }
+        #versionBadge { font-size: 20px; }
+        h2 { font-size: 33px; }
+        h3 { font-size: 30px; }
+
+        table tbody td {
+            font-size: 33px !important;
+            padding: 22px 20px !important;
+        }
+
+        table tbody td::before {
+            font-size: 23px !important;
+            margin-bottom: 8px;
+        }
+
+        table tbody td.td-name {
+            font-size: 35px !important;
+            padding: 24px 20px !important;
+        }
+
+        table tbody td.td-actions {
+            padding: 18px 20px !important;
+        }
+
+        table tbody td.td-actions button {
+            font-size: 25px !important;
+            min-height: 60px !important;
+            padding: 14px 28px !important;
+        }
+
+        .toolbar button {
+            font-size: 28px;
+            min-height: 73px;
+        }
+
+        label { font-size: 25px; }
+
+        input,
+        select,
+        textarea {
+            font-size: 22px;
+            padding: 18px 14px;
+        }
+
+        button {
+            font-size: 25px;
+            min-height: 68px;
+        }
+
+        .info-card { font-size: 25px; }
+
+        .note-card { padding: 20px 22px; }
+        .note-date { font-size: 23px; }
+        .note-desc { font-size: 28px; }
+        .note-att-link { font-size: 23px; }
+    }
