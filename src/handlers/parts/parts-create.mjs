@@ -2,7 +2,9 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({ region: "ap-southeast-2" });
-const docClient = DynamoDBDocumentClient.from(client);
+const docClient = DynamoDBDocumentClient.from(client, {
+  marshallOptions: { removeUndefinedValues: true },
+});
 const TABLE_NAME = process.env.TABLE_NAME;
 
 export const handler = async (event) => {
@@ -31,6 +33,8 @@ export const handler = async (event) => {
 
     const partId = "PART" + Date.now();
 
+    const costValue = body.cost != null ? Number(body.cost) : undefined;
+
     const partPayload = {
       PK: `CONTAINER#${containerId}`,
       SK: `PART#${itemId}#${partId}`,
@@ -39,13 +43,15 @@ export const handler = async (event) => {
       itemId,
       partId,
       name: body.name,
-      purchaseDate: body.purchaseDate || null,
-      cost: body.cost !== undefined ? Number(body.cost) : null,
-      purchasedFrom: body.purchasedFrom || null,
-      warrantyPeriod: body.warrantyPeriod || null,
-      attachments: body.attachments || [],
+      purchaseDate: body.purchaseDate || undefined,
+      cost: costValue !== undefined && !isNaN(costValue) ? costValue : undefined,
+      purchasedFrom: body.purchasedFrom || undefined,
+      warrantyPeriod: body.warrantyPeriod || undefined,
+      attachments: Array.isArray(body.attachments) ? body.attachments : [],
       createdDate: new Date().toISOString().split("T")[0],
     };
+
+    console.log("Saving Part Payload to DynamoDB:", JSON.stringify(partPayload, null, 2));
 
     await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: partPayload }));
 
