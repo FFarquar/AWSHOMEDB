@@ -14,7 +14,11 @@
     let childItems = [];
     let currentItemAttachments = [];
     let items = []; // Holds items in local mock mode
-    
+
+    let currentItemNotes = [];     // Notes collection for the currently open item
+    let editingNoteId = null;      // noteId of the note being edited (null = adding new)
+    let currentNoteAttachments = []; // Attachments staged for the note form
+
     let editingId = null;       // Tracks primary container PK edits
     let editingItemId = null;   // Tracks child item ID edits
     let activeShortContainerId = null; // Tracks active parent container (short form ID)
@@ -265,6 +269,9 @@
 
         // Render dashboard header card labels with safe fallbacks
         document.getElementById("summaryContainerName").innerText = containerObj ? containerObj.name : cleanShortId;
+        document.getElementById("itemsTableTitle").innerText = "Items for " + (containerObj ? containerObj.name : cleanShortId);
+
+        
         document.getElementById("summaryPurchaseDate").innerText = containerObj?.purchaseDate || "N/A";
         document.getElementById("summaryPurchasePrice").innerText = Number(containerObj?.purchasePrice || 0).toLocaleString();
         document.getElementById("summaryWarranty").innerText = containerObj?.extendedWarrantyFinishDate || containerObj?.warrantyFinishDate || "N/A";
@@ -393,6 +400,7 @@
         document.getElementById("itemModalTitle").innerText = "Add New Item Asset";
         clearItemForm();
         renderModalAttachments();
+        document.getElementById("notesSection").style.display = "none";
         document.getElementById("itemModal").style.display = "flex";
     }
 
@@ -417,14 +425,27 @@
         }
         
         currentItemAttachments = Array.isArray(rawAtts) ? [...rawAtts] : [];
-        
+
         renderModalAttachments();
+
+        // Show notes section and load existing notes for this item
+        currentItemNotes = [];
+        editingNoteId = null;
+        currentNoteAttachments = [];
+        document.getElementById("notesSection").style.display = "block";
+        document.getElementById("noteForm").style.display = "none";
+        loadNotes();
+
         document.getElementById("itemModal").style.display = "flex";
     }
 
     function closeItemModal() {
         document.getElementById("itemModal").style.display = "none";
         editingItemId = null;
+        currentItemNotes = [];
+        editingNoteId = null;
+        currentNoteAttachments = [];
+        document.getElementById("noteForm").style.display = "none";
         clearItemForm();
     }
 
@@ -667,6 +688,8 @@
             await finalizeContainerDelete(targetId);
         } else if (targetType === "ITEM") {
             await finalizeItemDelete(targetId);
+        } else if (targetType === "NOTE") {
+            await finalizeNoteDelete(targetId);
         }
     }
 
@@ -848,46 +871,301 @@ async function handleAttachmentUpload() {
     }
 }
 
+// ==========================================
+// SECTION 4: NOTES LOGIC METHODS
+// ==========================================
 
-function showSuccessToast(message) {
-    // Create toast container
-    const toast = document.createElement("div");
-    
-    // Style the toast (can also be done via CSS class)
-    Object.assign(toast.style, {
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        backgroundColor: "#e6f4ea",
-        color: "#137333",
-        border: "1px solid #137333",
-        padding: "12px 20px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-        zIndex: "9999",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        fontFamily: "sans-serif",
-        transition: "opacity 0.5s ease, transform 0.5s ease",
-        opacity: "0",
-        transform: "translateY(20px)"
-    });
+async function loadNotes() {
+    if (!editingItemId || !activeShortContainerId) return;
 
-    // Green tick + Text
-    toast.innerHTML = `<span>✅</span> <span>${message}</span>`;
-    document.body.appendChild(toast);
+    if (window.APP_CONFIG?.USE_MOCK) {
+        try {
+            const allNotes = await apiGet(
+                `/containers/${activeShortContainerId}/items/${editingItemId}/notes`,
+                "mock-notes.json"
+            );
+            currentItemNotes = Array.isArray(allNotes)
+                ? allNotes.filter(n => n.containerId === activeShortContainerId && n.itemId === editingItemId)
+                : [];
+        } catch (err) {
+            console.error("💥 Mock Notes Read Error:", err);
+            currentItemNotes = [];
+        }
+    } else {
+        try {
+            const res = await fetch(`${API}/containers/${activeShortContainerId}/items/${editingItemId}/notes`, {
+                method: "GET",
+                headers: authHeaders()
+            });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            const data = await res.json();
+            currentItemNotes = Array.isArray(data) ? data.map(n => ({
+                ...n,
+                attachments: Array.isArray(n.attachments) ? n.attachments.map(a => ({
+                    ...a,
+                    label: a.filename || a.label || "File",
+                    s3Url: a.fileUrl || a.s3Url || ""
+                })) : []
+            })) : [];
+        } catch (err) {
+            console.error("💥 Failed to load notes:", err);
+            currentItemNotes = [];
+        }
+    }
+    renderNotesSection();
+}
 
-    // Trigger slide up and fade in
-    setTimeout(() => {
-        toast.style.opacity = "1";
-        toast.style.transform = "translateY(0)";
-    }, 10);
+function renderNotesSection() {
+    const list = document.getElementById("notesList");
+    if (!list) return;
 
-    // Fade out after 2 seconds, then remove from DOM
-    setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateY(20px)";
-        setTimeout(() => toast.remove(), 500); // Wait for transition to finish
-    }, 2000);
+    if (currentItemNotes.length === 0) {
+        list.innerHTML = `<p style="color:#888; font-style:italic; font-size:13px; margin:0 0 6px 0;">No notes recorded yet.</p>`;
+        return;
+    }
+
+    list.innerHTML = currentItemNotes.map(note => {
+        const attachLinks = note.attachments && note.attachments.length > 0
+            ? note.attachments.map(a =>
+                `<a href="#" onclick="confirmDownload(event, '${(a.s3Url || "").replace(/'/g, "\\'")}', '${(a.label || "attachment").replace(/'/g, "\\'")}'); return false;" style="font-size:11px; color:#0073bb; margin-right:6px;">📎 ${a.label}</a>`
+              ).join("")
+            : "";
+
+        return `
+            <div style="background:#fff; border:1px solid #e0e0e0; border-radius:4px; padding:8px 10px; margin-bottom:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:11px; color:#888; margin-bottom:3px;">${note.date || "No date"}</div>
+                        <div style="font-size:13px; line-height:1.4; word-wrap:break-word;">${note.description || ""}</div>
+                        ${attachLinks ? `<div style="margin-top:4px;">${attachLinks}</div>` : ""}
+                    </div>
+                    <div style="display:flex; gap:4px; flex-shrink:0;">
+                        <button type="button" onclick="openEditNote('${note.noteId}')" style="min-height:24px; padding:0 8px; font-size:11px; border:1px solid #ccc; background:#fff; border-radius:3px; cursor:pointer; font-weight:normal;">Edit</button>
+                        <button type="button" onclick="confirmDeleteNote('${note.noteId}')" style="min-height:24px; padding:0 8px; font-size:11px; background:#ff4d4d; color:#fff; border:none; border-radius:3px; cursor:pointer;">Delete</button>
+                    </div>
+                </div>
+            </div>`;
+    }).join("");
+}
+
+function openAddNote() {
+    editingNoteId = null;
+    currentNoteAttachments = [];
+    document.getElementById("noteFormTitle").innerText = "Add Note";
+    document.getElementById("noteDate").value = new Date().toISOString().split("T")[0];
+    document.getElementById("noteDescription").value = "";
+    renderNoteAttachmentList();
+    document.getElementById("noteForm").style.display = "block";
+}
+
+function openEditNote(noteId) {
+    const note = currentItemNotes.find(n => n.noteId === noteId);
+    if (!note) return;
+
+    editingNoteId = noteId;
+    currentNoteAttachments = Array.isArray(note.attachments) ? [...note.attachments] : [];
+
+    document.getElementById("noteFormTitle").innerText = "Edit Note";
+    document.getElementById("noteDate").value = note.date || "";
+    document.getElementById("noteDescription").value = note.description || "";
+    renderNoteAttachmentList();
+    document.getElementById("noteForm").style.display = "block";
+}
+
+function closeNoteForm() {
+    document.getElementById("noteForm").style.display = "none";
+    editingNoteId = null;
+    currentNoteAttachments = [];
+}
+
+function renderNoteAttachmentList() {
+    const list = document.getElementById("noteAttachmentList");
+    if (!list) return;
+
+    if (!currentNoteAttachments || currentNoteAttachments.length === 0) {
+        list.innerHTML = `<li style="color:#888; font-style:italic; list-style:none; margin-left:-20px; font-size:12px;">No files attached.</li>`;
+        return;
+    }
+
+    list.innerHTML = currentNoteAttachments.map((att, idx) => `
+        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:3px 6px; border-radius:3px; border:1px solid #eee;">
+            <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
+            <button type="button" onclick="removeNoteAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:1px 5px; font-size:11px; cursor:pointer; font-weight:bold;">X</button>
+        </li>
+    `).join("");
+}
+
+function removeNoteAttachmentFromState(idx) {
+    currentNoteAttachments.splice(idx, 1);
+    renderNoteAttachmentList();
+}
+
+async function handleNoteAttachmentUpload() {
+    const fileInput = document.getElementById("noteFilePicker");
+    const progressStatus = document.getElementById("noteUploadProgress");
+
+    if (!fileInput || !fileInput.files.length) {
+        return alert("Please select a file first.");
+    }
+
+    const file = fileInput.files[0];
+    if (progressStatus) { progressStatus.style.display = "block"; progressStatus.innerText = "⏳ Processing..."; }
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        const localUrl = URL.createObjectURL(file);
+        currentNoteAttachments.push({
+            attachmentId: "ATT#" + Date.now(),
+            filename: file.name,
+            fileUrl: localUrl,
+            label: file.name,
+            s3Url: localUrl
+        });
+        renderNoteAttachmentList();
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+        showSuccessToast(`Staged "${file.name}" for note.`);
+        return;
+    }
+
+    try {
+        if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const res = await fetch(presignPath, { headers: authHeaders() });
+        if (!res.ok) throw new Error("Failed to get presigned URL.");
+        const { uploadUrl, fileUrl } = await res.json();
+
+        if (progressStatus) progressStatus.innerText = "⏳ Uploading to S3...";
+        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+        if (!uploadRes.ok) throw new Error("S3 upload failed.");
+
+        if (!editingNoteId) {
+            // New note: stage locally until note is saved
+            currentNoteAttachments.push({
+                attachmentId: `att-${Date.now()}`,
+                filename: file.name,
+                fileUrl,
+                label: file.name,
+                s3Url: fileUrl
+            });
+            renderNoteAttachmentList();
+            showSuccessToast(`Staged "${file.name}"! Will save with note.`);
+        } else {
+            // Existing note: persist attachment to DB immediately
+            if (progressStatus) progressStatus.innerText = "⏳ Logging metadata to database...";
+            const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
+            const dbPayload = {
+                pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
+                sk: `NOTE#${editingItemId}#${editingNoteId}`,
+                filename: file.name,
+                fileUrl
+            };
+            const dbRes = await fetch(`${API}/attachments`, {
+                method: "POST",
+                headers: { ...authHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify(dbPayload)
+            });
+            if (!dbRes.ok) throw new Error("Failed to link file to note record.");
+            const dbResult = await dbRes.json();
+            currentNoteAttachments = (dbResult.attachments || []).map(a => ({
+                ...a,
+                label: a.filename || a.label,
+                s3Url: a.fileUrl || a.s3Url
+            }));
+            renderNoteAttachmentList();
+            showSuccessToast(`Uploaded "${file.name}" to note!`);
+        }
+    } catch (err) {
+        alert(`Note attachment error: ${err.message}`);
+    } finally {
+        if (progressStatus) progressStatus.style.display = "none";
+        fileInput.value = "";
+    }
+}
+
+async function saveNote() {
+    const description = document.getElementById("noteDescription").value.trim();
+    if (!description) return alert("Description is required.");
+
+    const date = document.getElementById("noteDate").value || new Date().toISOString().split("T")[0];
+
+    const cleanedAttachments = currentNoteAttachments.map(att => ({
+        attachmentId: att.attachmentId || `att-${Date.now()}`,
+        filename: att.filename || att.label || "File",
+        fileUrl: att.fileUrl || att.s3Url || "",
+        uploadedAt: att.uploadedAt || new Date().toISOString()
+    }));
+
+    const payload = { description, date, attachments: cleanedAttachments };
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        if (editingNoteId) {
+            const idx = currentItemNotes.findIndex(n => n.noteId === editingNoteId);
+            if (idx !== -1) Object.assign(currentItemNotes[idx], payload);
+        } else {
+            const generatedNoteId = "NOTE" + Date.now();
+            currentItemNotes.push({
+                PK: `CONTAINER#${activeShortContainerId}`,
+                SK: `NOTE#${editingItemId}#${generatedNoteId}`,
+                entityType: "NOTE",
+                containerId: activeShortContainerId,
+                itemId: editingItemId,
+                noteId: generatedNoteId,
+                createdDate: new Date().toISOString().split("T")[0],
+                ...payload
+            });
+        }
+        closeNoteForm();
+        renderNotesSection();
+        showSuccessToast("Note saved!");
+        return;
+    }
+
+    try {
+        let path = `${API}/containers/${activeShortContainerId}/items/${editingItemId}/notes`;
+        let method = "POST";
+        if (editingNoteId) {
+            path += `/${editingNoteId}`;
+            method = "PUT";
+        }
+
+        const res = await fetch(path, {
+            method,
+            headers: authHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        closeNoteForm();
+        await loadNotes();
+        showSuccessToast("Note saved successfully!");
+    } catch (err) {
+        alert(`Failed to save note: ${err.message}`);
+    }
+}
+
+function confirmDeleteNote(noteId) {
+    const note = currentItemNotes.find(n => n.noteId === noteId);
+    const preview = note ? (note.description || "").substring(0, 50) : "This Note";
+    openDeleteModal("NOTE", noteId, preview);
+}
+
+async function finalizeNoteDelete(noteId) {
+    if (window.APP_CONFIG?.USE_MOCK) {
+        currentItemNotes = currentItemNotes.filter(n => n.noteId !== noteId);
+        renderNotesSection();
+        showSuccessToast("Note deleted.");
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `${API}/containers/${activeShortContainerId}/items/${editingItemId}/notes/${noteId}`,
+            { method: "DELETE", headers: authHeaders() }
+        );
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+        await loadNotes();
+        showSuccessToast("Note deleted successfully.");
+    } catch (err) {
+        alert(`Failed to delete note: ${err.message}`);
+    }
 }

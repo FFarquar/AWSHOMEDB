@@ -237,6 +237,95 @@ Resources:
             Method: DELETE
 
   # =========================
+  # NOTES
+  # =========================
+
+  NoteCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/notes/notes-create.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PostNote:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/notes
+            Method: POST
+
+  NotesListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/notes/notes-list.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetNotes:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/notes
+            Method: GET
+
+  NoteGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/notes/notes-get.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetNoteById:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/notes/{noteId}
+            Method: GET
+
+  NoteUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/notes/notes-update.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PutNote:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/notes/{noteId}
+            Method: PUT
+
+  NoteDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/notes/notes-delete.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        DeleteNote:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /containers/{containerId}/items/{itemId}/notes/{noteId}
+            Method: DELETE
+
+  # =========================
   # LOGIN (PUBLIC)
   # =========================
 
