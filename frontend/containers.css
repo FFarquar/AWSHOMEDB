@@ -393,60 +393,60 @@
        ============================================================ */
     @media (max-width: 1024px) and (orientation: portrait) {
 
-        body { font-size: 28px; }
-        header { font-size: 25px; }
-        #versionBadge { font-size: 20px; }
-        h2 { font-size: 33px; }
-        h3 { font-size: 30px; }
+        body { font-size: 34px; }
+        header { font-size: 30px; }
+        #versionBadge { font-size: 24px; }
+        h2 { font-size: 40px; }
+        h3 { font-size: 36px; }
 
         table tbody td {
-            font-size: 33px !important;
-            padding: 22px 20px !important;
+            font-size: 40px !important;
+            padding: 24px 20px !important;
         }
 
         table tbody td::before {
-            font-size: 23px !important;
+            font-size: 28px !important;
             margin-bottom: 8px;
         }
 
         table tbody td.td-name {
-            font-size: 35px !important;
-            padding: 24px 20px !important;
+            font-size: 42px !important;
+            padding: 26px 20px !important;
         }
 
         table tbody td.td-actions {
-            padding: 18px 20px !important;
+            padding: 20px !important;
         }
 
         table tbody td.td-actions button {
-            font-size: 25px !important;
-            min-height: 60px !important;
-            padding: 14px 28px !important;
+            font-size: 30px !important;
+            min-height: 72px !important;
+            padding: 16px 30px !important;
         }
 
         .toolbar button {
-            font-size: 28px;
-            min-height: 73px;
+            font-size: 34px;
+            min-height: 88px;
         }
 
-        label { font-size: 25px; }
+        label { font-size: 30px; }
 
         input,
         select,
         textarea {
-            font-size: 22px;
-            padding: 18px 14px;
+            font-size: 26px;
+            padding: 22px 14px;
         }
 
         button {
-            font-size: 25px;
-            min-height: 68px;
+            font-size: 30px;
+            min-height: 82px;
         }
 
-        .info-card { font-size: 25px; }
+        .info-card { font-size: 30px; }
 
-        .note-card { padding: 20px 22px; }
-        .note-date { font-size: 23px; }
-        .note-desc { font-size: 28px; }
-        .note-att-link { font-size: 23px; }
+        .note-card { padding: 24px 26px; }
+        .note-date { font-size: 28px; }
+        .note-desc { font-size: 34px; }
+        .note-att-link { font-size: 28px; }
     }
