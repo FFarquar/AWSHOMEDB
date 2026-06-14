@@ -228,6 +228,7 @@
             // ✨ FIXED: Target "containers" array memory directly
             containers = containers.filter(c => c.PK !== pk);
             renderTable();
+            showSuccessToast("Container deleted successfully.");
             return;
         }
         
@@ -237,8 +238,10 @@
                 method: "DELETE",
                 headers: authHeaders()
             });
+            
             if (!response.ok) throw new Error(`Status: ${response.status}`);
             await loadContainers();
+            showSuccessToast("Container deleted successfully.");
         } catch (error) {
             alert("Failed to delete the container from the cloud.");
         }
@@ -356,7 +359,9 @@
         childItems.forEach(item => {
             let linksHtml = "None";
             if (item.attachments && item.attachments.length > 0) {
-                linksHtml = item.attachments.map(a => `<a href="${a.s3Url}" target="_blank">📎 ${a.label}</a>`).join("<br>");
+                linksHtml = item.attachments.map(a =>
+                    `<a href="#" onclick="confirmDownload(event, '${(a.s3Url || '').replace(/'/g, "\\'")}', '${(a.label || 'attachment').replace(/'/g, "\\'")}'); return false;">📎 ${a.label}</a>`
+                ).join("<br>");
             }
 
             // ✨ FIXED: Made Item Edit button exactly the same height layout as the Delete button
@@ -526,11 +531,11 @@
 
         if (window.APP_CONFIG?.USE_MOCK) {
             if (editingItemId) {
-                const idx = localMockItems.findIndex(i => i.itemId === editingItemId && i.containerId === activeShortContainerId);
-                if (idx !== -1) Object.assign(localMockItems[idx], payload);
+                const idx = childItems.findIndex(i => i.itemId === editingItemId && i.containerId === activeShortContainerId);
+                if (idx !== -1) Object.assign(childItems[idx], payload);
             } else {
                 const generatedId = "ITEM" + Date.now();
-                localMockItems.push({
+                childItems.push({
                     PK: `CONTAINER#${activeShortContainerId}`,
                     SK: `ITEM#${generatedId}`,
                     entityType: "ITEM",
@@ -541,7 +546,8 @@
                 });
             }
             closeItemModal();
-            loadItems();
+            showSuccessToast('Item saved successfully to the local mock!');
+            renderItemsTable();
             return;
         }
 
@@ -566,7 +572,8 @@
             // Close the form modal safely
             closeItemModal();
             
-            alert("Item saved successfully to the database!");
+            // alert("Item saved successfully to the database!");
+            showSuccessToast('Item saved successfully to the database!');
 
         } catch (error) {
             alert(`Save lifecycle failed: ${error.message}`);
@@ -598,7 +605,20 @@
     // ==========================================
     // SECTION 3: SYSTEM UTILITIES METHODS
     // ==========================================
-    
+
+    function confirmDownload(event, url, label) {
+        event.preventDefault();
+        if (!confirm(`Download "${label}"?`)) return;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = label;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
     // ✨ PASTE DESTINATION LOCATION: Global deletion state variables and helpers sit here
     let deleteTargetType = null; 
     let deleteTargetId = null;   
@@ -651,12 +671,56 @@
         window.location.href = "login.html";
     }
 
+// Add this helper function somewhere in your script
+function showSuccessToast(message) {
+    // Create toast container
+    const toast = document.createElement("div");
+    
+    // Style the toast (can also be done via CSS class)
+    Object.assign(toast.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        backgroundColor: "#e6f4ea",
+        color: "#137333",
+        border: "1px solid #137333",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        zIndex: "9999",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        fontFamily: "sans-serif",
+        transition: "opacity 0.5s ease, transform 0.5s ease",
+        opacity: "0",
+        transform: "translateY(20px)"
+    });
+
+    // Green tick + Text
+    toast.innerHTML = `<span>✅</span> <span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    // Trigger slide up and fade in
+    setTimeout(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0)";
+    }, 10);
+
+    // Fade out after 2 seconds, then remove from DOM
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(20px)";
+        setTimeout(() => toast.remove(), 500); // Wait for transition to finish
+    }, 2000);
+}
+
 async function handleAttachmentUpload() {
     const fileInput = document.getElementById("itemFilePicker");
     const progressStatus = document.getElementById("uploadProgressBar");
 
     if (!fileInput || !fileInput.files.length) {
-        return alert("Please select a file first.");
+        return alert("Please select a file first."); // Kept as alert since it blocks an error state
     }
     
     const file = fileInput.files[0];
@@ -666,9 +730,6 @@ async function handleAttachmentUpload() {
         progressStatus.innerText = "⏳ Processing file upload...";
     }
 
-    // ==================================================
-    // 🧠 LOCAL SANDBOX MOCK MODE (SEQUENTIAL STORAGE)
-    // ==================================================
     if (window.APP_CONFIG?.USE_MOCK) {
         const localMockUrl = URL.createObjectURL(file);
         currentItemAttachments.push({
@@ -681,12 +742,12 @@ async function handleAttachmentUpload() {
         renderModalAttachments();
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
+        
+        // 🔄 REPLACED ALERT IN MOCK MODE
+        showSuccessToast(`Staged local mock for "${file.name}"`);
         return;
     }
 
-    // ==================================================
-    // 🌐 AWS ROUTE (S3 UPLOAD ENGINE + STATE SPLIT)
-    // ==================================================
     try {
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
 
@@ -705,29 +766,28 @@ async function handleAttachmentUpload() {
         });
         if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
 
-        // ==================================================
-        // 🔄 STATE ENGINE LOGIC SPLIT
-        // ==================================================
         if (!editingItemId) {
-            // 💡 PATHWAY A: BRAND NEW ITEM (Stage locally with your EXACT old parameter keys)
+            // 💡 PATHWAY A: BRAND NEW ITEM 
             console.log("📝 Staging attachment locally until item creation is finalized.");
             
             const stagedAttachment = {
                 attachmentId: `att-${Date.now()}`,
                 filename: file.name,
                 fileUrl: fileUrl,
-                label: file.name,      // 🌟 Populates properties to resolve input modal view fields instantly
-                s3Url: fileUrl,        // 🌟 Populates properties to resolve input modal view fields instantly
+                label: file.name,      
+                s3Url: fileUrl,        
                 name: file.name,       
                 url: fileUrl           
             };
 
             currentItemAttachments.push(stagedAttachment);
             renderModalAttachments();
-            alert(`Staged "${file.name}"! It will be permanently saved when you click Save Item.`);
+            
+            // 🔄 REPLACED ALERT
+            showSuccessToast(`Staged "${file.name}"! Will save with item.`);
 
         } else {
-            // 💡 PATHWAY B: EXISTING ITEM (Commit straight to DynamoDB)
+            // 💡 PATHWAY B: EXISTING ITEM 
             if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
 
             const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
@@ -751,7 +811,6 @@ async function handleAttachmentUpload() {
             const dbResult = await dbRes.json();
             const rawAttachments = dbResult.attachments || [];
 
-            // ✨ FIX: Map the backend return variables into explicit s3Url/label keys before rendering
             currentItemAttachments = rawAttachments.map(att => ({
                 ...att,
                 label: att.filename || att.label,
@@ -759,14 +818,59 @@ async function handleAttachmentUpload() {
             }));
 
             renderModalAttachments();
-            alert(`Upload Success! ${file.name} attached safely to existing record.`);
+            
+            // 🔄 REPLACED ALERT
+            showSuccessToast(`Uploaded ${file.name} successfully!`);
         }
 
     } catch (err) {
-        alert(`Attachment pipeline error: ${err.message}`);
+        alert(`Attachment pipeline error: ${err.message}`); // Left intact to catch critical failures
     } finally {
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
     }
 }
 
+
+function showSuccessToast(message) {
+    // Create toast container
+    const toast = document.createElement("div");
+    
+    // Style the toast (can also be done via CSS class)
+    Object.assign(toast.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        backgroundColor: "#e6f4ea",
+        color: "#137333",
+        border: "1px solid #137333",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        zIndex: "9999",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        fontFamily: "sans-serif",
+        transition: "opacity 0.5s ease, transform 0.5s ease",
+        opacity: "0",
+        transform: "translateY(20px)"
+    });
+
+    // Green tick + Text
+    toast.innerHTML = `<span>✅</span> <span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    // Trigger slide up and fade in
+    setTimeout(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0)";
+    }, 10);
+
+    // Fade out after 2 seconds, then remove from DOM
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(20px)";
+        setTimeout(() => toast.remove(), 500); // Wait for transition to finish
+    }, 2000);
+}
