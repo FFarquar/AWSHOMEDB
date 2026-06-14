@@ -92,8 +92,8 @@
             const pk = c.PK;
             const shortId = (c.containerId || pk.replace("CONTAINER#", "")).trim().toUpperCase();
 
-            const actionsCell = isAdmin 
-                ? `<td>
+            const actionsCell = isAdmin
+                ? `<td class="td-actions">
                     <button onclick="edit('${pk}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Edit</button>
                     <button onclick="removeItem('${pk}')" class="btn-danger" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Delete</button>
                 </td>`
@@ -103,10 +103,10 @@
             row.style.cursor = "pointer";
 
             row.innerHTML = `
-                <td><strong>${c.name}</strong></td>
-                <td>${c.purchaseDate || ""}</td>
-                <td>$${Number(c.purchasePrice || 0).toLocaleString()}</td>
-                <td>${c.extendedWarrantyFinishDate || c.warrantyFinishDate || ""}</td>
+                <td class="td-name"><strong>${c.name}</strong></td>
+                <td data-label="Purchased">${c.purchaseDate || ""}</td>
+                <td data-label="Price">$${Number(c.purchasePrice || 0).toLocaleString()}</td>
+                <td data-label="Warranty">${c.extendedWarrantyFinishDate || c.warrantyFinishDate || ""}</td>
                 ${actionsCell}
             `;
 
@@ -382,12 +382,12 @@
             const row = document.createElement("tr");
             row.style.cursor = canManageItems ? "pointer" : "default";
             row.innerHTML = `
-                <td><strong>${item.itemName || "Unnamed Asset"}</strong></td>
-                <td>${item.purchaseDate || "N/A"}</td>
-                <td>$${Number(item.purchasePrice || 0).toLocaleString()}</td>
-                <td>${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
-                <td data-note-count="${item.itemId}">...</td>
-                <td>${attCount}</td>
+                <td class="td-name"><strong>${item.itemName || "Unnamed Asset"}</strong></td>
+                <td data-label="Purchased">${item.purchaseDate || "N/A"}</td>
+                <td data-label="Price">$${Number(item.purchasePrice || 0).toLocaleString()}</td>
+                <td data-label="Warranty">${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
+                <td data-label="Notes" data-note-count="${item.itemId}">...</td>
+                <td data-label="Attachments">${attCount}</td>
             `;
 
             if (canManageItems) {
