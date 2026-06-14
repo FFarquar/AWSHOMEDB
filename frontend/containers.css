@@ -1,6 +1,7 @@
 
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+        font-size: 16px;
         margin: 0;
         background: #f4f6f9;
     }
@@ -9,6 +10,7 @@
         background: #232f3e;
         color: white;
         padding: 12px 16px;
+        font-size: 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -30,11 +32,11 @@
     button {
         cursor: pointer;
         border: none;
-        padding: 10px 12px;
+        padding: 10px 14px;
         border-radius: 6px;
         font-weight: 600;
-        font-size: 14px;
-        min-height: 40px;
+        font-size: 15px;
+        min-height: 42px;
     }
 
     .btn-primary {
@@ -67,15 +69,16 @@
 
     th,
     td {
-        padding: 10px;
+        padding: 12px;
         border-bottom: 1px solid #eee;
         text-align: left;
-        font-size: 14px;
+        font-size: 16px;
         white-space: nowrap;
     }
 
     th {
         background: #f0f0f0;
+        font-size: 15px;
     }
 
     tr:hover {
@@ -105,9 +108,9 @@
 
     .modal-content {
         background: white;
-        padding: 18px;
+        padding: 20px;
         width: 100%;
-        max-width: 450px;
+        max-width: 500px;
         border-radius: 10px;
         box-sizing: border-box;
         max-height: 90vh;
@@ -115,27 +118,27 @@
     }
 
     .form-group {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
 
     label {
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 600;
     }
 
     input,
     select {
         width: 100%;
-        padding: 10px;
-        margin-top: 4px;
+        padding: 11px 12px;
+        margin-top: 5px;
         border: 1px solid #ccc;
         border-radius: 6px;
-        font-size: 14px;
+        font-size: 15px;
         box-sizing: border-box;
     }
 
     .small {
-        font-size: 12px;
+        font-size: 13px;
         color: #666;
         margin-top: 6px;
         word-break: break-word;
@@ -144,7 +147,7 @@
     .actions {
         display: flex;
         gap: 10px;
-        margin-top: 12px;
+        margin-top: 14px;
     }
 
     .info-card {
@@ -154,9 +157,10 @@
         margin-bottom: 15px;
         border-left: 5px solid #ff9900;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        font-size: 15px;
     }
 
-    /* --- Note card (desktop base sizes) --- */
+    /* --- Note cards --- */
     .note-card {
         background: #fff;
         border: 1px solid #e0e0e0;
@@ -173,13 +177,13 @@
     }
 
     .note-date {
-        font-size: 12px;
+        font-size: 13px;
         color: #888;
-        margin-bottom: 3px;
+        margin-bottom: 4px;
     }
 
     .note-desc {
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1.5;
         word-wrap: break-word;
     }
@@ -189,22 +193,23 @@
     }
 
     .note-att-link {
-        font-size: 12px;
+        font-size: 13px;
         color: #0073bb;
         margin-right: 8px;
         text-decoration: none;
     }
 
-    /* --- Version badge (desktop) --- */
+    /* --- Version badge --- */
     #versionBadge {
-        font-size: 12px;
+        font-size: 13px;
         color: #aaa;
         font-family: monospace;
         letter-spacing: 0.5px;
     }
 
     /* ============================================================
-       MOBILE / TABLET  (portrait phones, landscape phones, tablets)
+       MOBILE  —  portrait phones, landscape phones, small tablets
+       max-width: 1024px covers all phones in both orientations
        ============================================================ */
     @media (max-width: 1024px) {
 
@@ -213,81 +218,89 @@
         }
 
         header {
-            font-size: 17px;
-            padding: 14px 16px;
+            font-size: 18px;
+            padding: 16px;
         }
 
         #versionBadge {
-            font-size: 14px;
-            color: #bbb;
+            font-size: 15px;
         }
 
-        /* --- Tables become stacked cards --- */
+        h2 { font-size: 22px; }
+        h3 { font-size: 20px; }
+
+        /* --- Card transformation ---
+           Must set display:block all the way from table down to td,
+           otherwise the table formatting context overrides child display values */
         .table-wrapper {
             background: transparent;
             border-radius: 0;
+            overflow-x: visible;
         }
 
-        table {
-            min-width: 0;
+        table,
+        table tbody {
+            display: block !important;
             width: 100%;
+            min-width: 0;
         }
 
         table thead {
-            display: none;
+            display: none !important;
         }
 
         table tbody tr {
-            display: block;
+            display: block !important;
             background: white;
-            border-radius: 12px;
-            margin-bottom: 14px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            border-radius: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
-        /* Each data cell: stacked (label above value) */
+        /* Each data cell stacks: grey label on line 1, value on line 2 */
         table tbody td {
-            display: block;
-            padding: 14px 18px;
-            font-size: 20px;
+            display: block !important;
+            padding: 16px 20px !important;
+            font-size: 20px !important;
             border-bottom: 1px solid #f0f0f0;
-            white-space: normal;
-            line-height: 1.4;
+            white-space: normal !important;
+            text-align: left !important;
         }
 
         table tbody td:last-child {
             border-bottom: none;
         }
 
-        /* Label sits on its own line above the value */
         table tbody td::before {
             display: block;
             content: attr(data-label);
+            font-size: 13px !important;
             font-weight: 600;
-            font-size: 14px;
             color: #999;
             margin-bottom: 4px;
+            text-transform: none;
         }
 
-        /* Name cell: card title */
+        /* Card title row */
         table tbody td.td-name {
-            font-size: 22px;
+            font-size: 22px !important;
             font-weight: 700;
             background: #fafafa;
-            border-bottom: 2px solid #eeeeee;
-            padding: 18px;
+            border-bottom: 2px solid #eee !important;
+            padding: 18px 20px !important;
         }
 
         table tbody td.td-name::before {
             display: none;
         }
 
-        /* Actions cell: buttons side by side, no label */
+        /* Actions row — buttons side by side */
         table tbody td.td-actions {
-            display: flex;
+            display: flex !important;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 12px;
+            padding: 14px 20px !important;
         }
 
         table tbody td.td-actions::before {
@@ -301,29 +314,15 @@
             padding: 10px 24px !important;
         }
 
-        /* --- Form elements --- */
-        label {
-            font-size: 16px;
-        }
-
-        input,
-        select,
-        textarea {
-            font-size: 16px; /* prevents iOS auto-zoom on focus */
-            padding: 13px 12px;
-        }
-
-        button {
-            font-size: 16px;
-            min-height: 48px;
+        /* --- Toolbar --- */
+        .toolbar {
+            flex-direction: column;
         }
 
         .toolbar button {
             width: 100%;
-        }
-
-        .toolbar {
-            flex-direction: column;
+            min-height: 52px;
+            font-size: 18px;
         }
 
         /* --- Modal as bottom sheet --- */
@@ -333,35 +332,44 @@
         }
 
         .modal-content {
-            padding: 22px 18px;
+            padding: 24px 20px;
             max-width: 100%;
             max-height: 92vh;
             border-radius: 18px 18px 0 0;
         }
 
+        /* --- Form --- */
+        label {
+            font-size: 17px;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px; /* 16px minimum prevents iOS zoom on focus */
+            padding: 14px 12px;
+        }
+
+        button {
+            font-size: 17px;
+            min-height: 52px;
+        }
+
         .actions {
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         .actions button {
             width: 100%;
         }
 
-        /* --- Headings --- */
-        h2 {
-            font-size: 22px;
-        }
-
-        h3 {
-            font-size: 20px;
-        }
-
-        /* --- Info card and notes --- */
+        /* --- Info card --- */
         .info-card {
             font-size: 17px;
         }
 
+        /* --- Note cards --- */
         .note-card {
             padding: 14px 16px;
         }
@@ -371,7 +379,7 @@
         }
 
         .note-desc {
-            font-size: 17px;
+            font-size: 18px;
         }
 
         .note-att-link {
