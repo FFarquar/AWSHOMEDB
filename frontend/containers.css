@@ -246,50 +246,46 @@
             overflow: hidden;
         }
 
+        /* Each data cell: stacked (label above value) */
         table tbody td {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: block;
             padding: 14px 18px;
-            font-size: 17px;
+            font-size: 20px;
             border-bottom: 1px solid #f0f0f0;
             white-space: normal;
-            text-align: right;
-            min-height: 52px;
+            line-height: 1.4;
         }
 
         table tbody td:last-child {
             border-bottom: none;
         }
 
+        /* Label sits on its own line above the value */
         table tbody td::before {
+            display: block;
             content: attr(data-label);
-            font-weight: 700;
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            text-align: left;
-            flex-shrink: 0;
-            margin-right: auto;
-            padding-right: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 4px;
         }
 
-        /* Name cell: larger, acts as card title */
+        /* Name cell: card title */
         table tbody td.td-name {
-            font-size: 19px;
+            font-size: 22px;
             font-weight: 700;
             background: #fafafa;
             border-bottom: 2px solid #eeeeee;
-            padding: 16px 18px;
+            padding: 18px;
         }
 
         table tbody td.td-name::before {
             display: none;
         }
 
-        /* Actions cell: right-aligned buttons, no label */
+        /* Actions cell: buttons side by side, no label */
         table tbody td.td-actions {
+            display: flex;
             justify-content: flex-end;
             gap: 10px;
         }
@@ -299,10 +295,10 @@
         }
 
         table tbody td.td-actions button {
-            min-height: 44px !important;
+            min-height: 48px !important;
             height: auto !important;
-            font-size: 15px !important;
-            padding: 8px 20px !important;
+            font-size: 16px !important;
+            padding: 10px 24px !important;
         }
 
         /* --- Form elements --- */
