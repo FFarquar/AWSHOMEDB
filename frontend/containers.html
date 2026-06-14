@@ -127,7 +127,7 @@
             </div>
 
             <!-- 📎 MULTI-FILE ATTACHMENTS MANAGER SUB-LAYOUT -->
-            <div style="border-top:1px dashed #ccc; padding-top:10px; margin-top:15px;">
+            <div style="background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <label><strong>Attachments Collection</strong></label>
                 
                 <!-- 🚀 FILE UPLOADER ENGINE ADDITION -->
@@ -145,7 +145,7 @@
             </div>
 
             <!-- 📝 NOTES COLLECTION SECTION (visible only when editing an existing item) -->
-            <div id="notesSection" style="display:none; border-top:1px dashed #ccc; padding-top:10px; margin-top:15px;">
+            <div id="notesSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Notes Collection</strong></label>
                     <button type="button" onclick="openAddNote()" style="min-height:28px; padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">+ Add Note</button>
@@ -178,9 +178,10 @@
                         <ul id="noteAttachmentList" style="padding-left:20px; font-size:12px; margin-top:8px; max-height:80px; overflow-y:auto;"></ul>
                     </div>
 
-                    <div style="display:flex; gap:8px; margin-top:10px;">
+                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
                         <button type="button" onclick="saveNote()" style="min-height:30px; padding:0 14px; background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;">Save Note</button>
                         <button type="button" onclick="closeNoteForm()" style="min-height:30px; padding:0 14px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Cancel</button>
+                        <button type="button" id="btnDeleteNoteInForm" onclick="deleteNoteFromForm()" style="display:none; min-height:30px; padding:0 14px; background:#ff4d4d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;">Delete Note</button>
                     </div>
                 </div>
             </div>

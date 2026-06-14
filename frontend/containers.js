@@ -991,18 +991,10 @@ function renderNotesSection() {
             : "";
 
         return `
-            <div style="background:#fff; border:1px solid #e0e0e0; border-radius:4px; padding:8px 10px; margin-bottom:6px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-size:11px; color:#888; margin-bottom:3px;">${note.date || "No date"}</div>
-                        <div style="font-size:13px; line-height:1.4; word-wrap:break-word;">${note.description || ""}</div>
-                        ${attachLinks ? `<div style="margin-top:4px;">${attachLinks}</div>` : ""}
-                    </div>
-                    <div style="display:flex; gap:4px; flex-shrink:0;">
-                        <button type="button" onclick="openEditNote('${note.noteId}')" style="min-height:24px; padding:0 8px; font-size:11px; border:1px solid #ccc; background:#fff; border-radius:3px; cursor:pointer; font-weight:normal;">Edit</button>
-                        <button type="button" onclick="confirmDeleteNote('${note.noteId}')" style="min-height:24px; padding:0 8px; font-size:11px; background:#ff4d4d; color:#fff; border:none; border-radius:3px; cursor:pointer;">Delete</button>
-                    </div>
-                </div>
+            <div class="note-card" onclick="openEditNote('${note.noteId}')">
+                <div style="font-size:11px; color:#888; margin-bottom:3px;">${note.date || "No date"}</div>
+                <div style="font-size:13px; line-height:1.4; word-wrap:break-word;">${note.description || ""}</div>
+                ${attachLinks ? `<div style="margin-top:4px;">${attachLinks}</div>` : ""}
             </div>`;
     }).join("");
 }
@@ -1014,6 +1006,8 @@ function openAddNote() {
     document.getElementById("noteDate").value = new Date().toISOString().split("T")[0];
     document.getElementById("noteDescription").value = "";
     renderNoteAttachmentList();
+    const btnDel = document.getElementById("btnDeleteNoteInForm");
+    if (btnDel) btnDel.style.display = "none";
     document.getElementById("noteForm").style.display = "block";
 }
 
@@ -1028,6 +1022,8 @@ function openEditNote(noteId) {
     document.getElementById("noteDate").value = note.date || "";
     document.getElementById("noteDescription").value = note.description || "";
     renderNoteAttachmentList();
+    const btnDel = document.getElementById("btnDeleteNoteInForm");
+    if (btnDel) btnDel.style.display = "inline-block";
     document.getElementById("noteForm").style.display = "block";
 }
 
@@ -1035,6 +1031,13 @@ function closeNoteForm() {
     document.getElementById("noteForm").style.display = "none";
     editingNoteId = null;
     currentNoteAttachments = [];
+}
+
+function deleteNoteFromForm() {
+    if (!editingNoteId) return;
+    const noteIdToDelete = editingNoteId;
+    closeNoteForm();
+    confirmDeleteNote(noteIdToDelete);
 }
 
 function renderNoteAttachmentList() {

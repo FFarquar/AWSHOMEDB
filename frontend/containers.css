@@ -156,6 +156,21 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
+    .note-card {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .note-card:hover {
+        background: #eef2ff;
+        border-color: #c0cfe8;
+    }
+
     @media (max-width: 600px) {
 
         th,
@@ -163,11 +178,38 @@
             font-size: 13px;
         }
 
-        button {
+        .toolbar button {
             width: 100%;
         }
 
         .toolbar {
             flex-direction: column;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px; /* prevents iOS auto-zoom on focus */
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        .modal-content {
+            padding: 12px 10px;
+            max-height: 95vh;
+        }
+
+        .actions {
+            flex-direction: column;
+        }
+
+        .actions button {
+            width: 100%;
+        }
+
+        h3 {
+            font-size: 17px;
         }
     }
