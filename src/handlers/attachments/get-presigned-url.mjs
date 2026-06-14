@@ -45,7 +45,7 @@ export const handler = async (event) => {
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
     
     // ✨ FIX: Resolved string literal interpolation formatting typo cleanly
-    const fileUrl = `https://${BUCKET_NAME}.s3.${REGION}://{s3Key}`;
+    const fileUrl = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${s3Key}`;
 
     return {
       statusCode: 200,
