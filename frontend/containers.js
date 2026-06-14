@@ -368,7 +368,6 @@
 
         childItems.forEach(item => {
             const attCount = Array.isArray(item.attachments) ? item.attachments.length : 0;
-            const noteCount = item.noteCount !== undefined ? item.noteCount : "-";
 
             const row = document.createElement("tr");
             row.style.cursor = canManageItems ? "pointer" : "default";
@@ -377,7 +376,7 @@
                 <td>${item.purchaseDate || "N/A"}</td>
                 <td>$${Number(item.purchasePrice || 0).toLocaleString()}</td>
                 <td>${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
-                <td>${noteCount}</td>
+                <td data-note-count="${item.itemId}">...</td>
                 <td>${attCount}</td>
             `;
 
@@ -387,6 +386,39 @@
 
             tbody.appendChild(row);
         });
+
+        loadNoteCountsAsync();
+    }
+
+    async function loadNoteCountsAsync() {
+        await Promise.all(childItems.map(async item => {
+            const cell = document.querySelector(`td[data-note-count="${item.itemId}"]`);
+            if (!cell) return;
+            try {
+                let count = 0;
+                if (window.APP_CONFIG?.USE_MOCK) {
+                    const allNotes = await apiGet(
+                        `/containers/${activeShortContainerId}/items/${item.itemId}/notes`,
+                        "mock-notes.json"
+                    );
+                    count = Array.isArray(allNotes)
+                        ? allNotes.filter(n => n.containerId === activeShortContainerId && n.itemId === item.itemId).length
+                        : 0;
+                } else {
+                    const res = await fetch(
+                        `${API}/containers/${activeShortContainerId}/items/${item.itemId}/notes`,
+                        { method: "GET", headers: authHeaders() }
+                    );
+                    if (res.ok) {
+                        const notes = await res.json();
+                        count = Array.isArray(notes) ? notes.length : 0;
+                    }
+                }
+                cell.textContent = count;
+            } catch {
+                cell.textContent = "-";
+            }
+        }));
     }
 
      function openItemCreate() {
