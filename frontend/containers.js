@@ -1,4 +1,11 @@
 
+    function formatDate(dateStr) {
+        if (!dateStr) return "";
+        const parts = dateStr.split("-");
+        if (parts.length !== 3) return dateStr;
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
     const API = window.APP_CONFIG.API_BASE_URL;
     let token = localStorage.getItem("authToken");
 
@@ -22,6 +29,8 @@
     let currentItemParts = [];       // Parts collection for the currently open item
     let editingPartId = null;        // partId of the part being edited (null = adding new)
     let currentPartAttachments = []; // Attachments staged for the part form
+
+    let editingAttachmentIdx = null; // Index in currentItemAttachments being viewed/deleted
 
     let editingId = null;       // Tracks primary container PK edits
     let editingItemId = null;   // Tracks child item ID edits
@@ -108,9 +117,9 @@
 
             row.innerHTML = `
                 <td class="td-name"><strong>${c.name}</strong></td>
-                <td data-label="Purchased">${c.purchaseDate || ""}</td>
+                <td data-label="Purchased">${formatDate(c.purchaseDate)}</td>
                 <td data-label="Price">$${Number(c.purchasePrice || 0).toLocaleString()}</td>
-                <td data-label="Warranty">${c.extendedWarrantyFinishDate || c.warrantyFinishDate || ""}</td>
+                <td data-label="Warranty">${formatDate(c.extendedWarrantyFinishDate || c.warrantyFinishDate)}</td>
                 ${actionsCell}
             `;
 
@@ -289,9 +298,9 @@
         document.getElementById("itemsTableTitle").innerText = "Items for " + (containerObj ? containerObj.name : cleanShortId);
 
         
-        document.getElementById("summaryPurchaseDate").innerText = containerObj?.purchaseDate || "N/A";
+        document.getElementById("summaryPurchaseDate").innerText = formatDate(containerObj?.purchaseDate) || "N/A";
         document.getElementById("summaryPurchasePrice").innerText = Number(containerObj?.purchasePrice || 0).toLocaleString();
-        document.getElementById("summaryWarranty").innerText = containerObj?.extendedWarrantyFinishDate || containerObj?.warrantyFinishDate || "N/A";
+        document.getElementById("summaryWarranty").innerText = formatDate(containerObj?.extendedWarrantyFinishDate || containerObj?.warrantyFinishDate) || "N/A";
 
         // View panel display visibility toggles
         document.getElementById("containersPanelView").style.display = "none";
@@ -387,9 +396,9 @@
             row.style.cursor = canManageItems ? "pointer" : "default";
             row.innerHTML = `
                 <td class="td-name"><strong>${item.itemName || "Unnamed Asset"}</strong></td>
-                <td data-label="Purchased">${item.purchaseDate || "N/A"}</td>
+                <td data-label="Purchased">${formatDate(item.purchaseDate) || "N/A"}</td>
                 <td data-label="Price">$${Number(item.purchasePrice || 0).toLocaleString()}</td>
-                <td data-label="Warranty">${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (item.warrantyExpiryDate || "N/A")}</td>
+                <td data-label="Warranty">${item.warrantyExpiryDate === "1970-01-01" ? "N/A" : (formatDate(item.warrantyExpiryDate) || "N/A")}</td>
                 <td data-label="Notes" data-note-count="${item.itemId}">...</td>
                 <td data-label="Parts" data-part-count="${item.itemId}">...</td>
                 <td data-label="Attachments">${attCount}</td>
@@ -466,6 +475,8 @@
         currentItemAttachments = [];
         document.getElementById("itemModalTitle").innerText = "Add New Item Asset";
         clearItemForm();
+        const _t = new Date();
+        document.getElementById("itemPurchaseDate").value = _t.getFullYear() + "-" + String(_t.getMonth() + 1).padStart(2, "0") + "-" + String(_t.getDate()).padStart(2, "0");
         renderModalAttachments();
         document.getElementById("notesSection").style.display = "none";
         document.getElementById("partsSection").style.display = "none";
@@ -496,21 +507,21 @@
         
         currentItemAttachments = Array.isArray(rawAtts) ? [...rawAtts] : [];
 
-        renderModalAttachments();
+        renderAttachmentCards();
 
         // Show notes section and load existing notes for this item
         currentItemNotes = [];
         editingNoteId = null;
         currentNoteAttachments = [];
         document.getElementById("notesSection").style.display = "block";
-        document.getElementById("noteForm").style.display = "none";
+        document.getElementById("noteModal").style.display = "none";
 
         // Show parts section and load existing parts for this item
         currentItemParts = [];
         editingPartId = null;
         currentPartAttachments = [];
         document.getElementById("partsSection").style.display = "block";
-        document.getElementById("partForm").style.display = "none";
+        document.getElementById("partModal").style.display = "none";
 
         const btnDelete = document.getElementById("btnDeleteItem");
         if (btnDelete) btnDelete.style.display = canManageItems ? "inline-block" : "none";
@@ -526,11 +537,13 @@
         currentItemNotes = [];
         editingNoteId = null;
         currentNoteAttachments = [];
-        document.getElementById("noteForm").style.display = "none";
+        document.getElementById("noteModal").style.display = "none";
         currentItemParts = [];
         editingPartId = null;
         currentPartAttachments = [];
-        document.getElementById("partForm").style.display = "none";
+        document.getElementById("partModal").style.display = "none";
+        editingAttachmentIdx = null;
+        document.getElementById("attachmentModal").style.display = "none";
         clearItemForm();
     }
 
@@ -540,8 +553,8 @@
             if (el) el.value = "";
         });
 
-        currentItemAttachments = []; 
-        updateModalAttachmentListUI();
+        currentItemAttachments = [];
+        renderAttachmentCards();
     }
 
     function addAttachmentToState() {
@@ -606,6 +619,64 @@
             `;
             list.appendChild(li);
         });
+    }
+
+    function renderAttachmentCards() {
+        const list = document.getElementById("attachmentCardsList");
+        if (!list) return;
+        if (!currentItemAttachments || currentItemAttachments.length === 0) {
+            list.innerHTML = `<p style="color:#888; font-style:italic; font-size:13px; margin:0 0 6px 0;">No attachments yet.</p>`;
+            return;
+        }
+        list.innerHTML = currentItemAttachments.map((att, idx) => {
+            const name = att.filename || att.label || att.name || "Attachment";
+            return `<div class="note-card" onclick="openEditAttachment(${idx})">
+                <div class="note-date">📎 ${name}</div>
+            </div>`;
+        }).join("");
+    }
+
+    function openAddAttachment() {
+        editingAttachmentIdx = null;
+        document.getElementById("attachmentFormTitle").innerText = "Add Attachment";
+        document.getElementById("itemFilePicker").value = "";
+        document.getElementById("uploadProgressBar").style.display = "none";
+        document.getElementById("attachmentFilePickerRow").style.display = "flex";
+        document.getElementById("attachmentCurrentFile").style.display = "none";
+        const btnDel = document.getElementById("btnDeleteAttachmentInForm");
+        if (btnDel) btnDel.style.display = "none";
+        document.getElementById("attachmentModal").style.display = "flex";
+    }
+
+    function openEditAttachment(idx) {
+        const att = currentItemAttachments[idx];
+        if (!att) return;
+        editingAttachmentIdx = idx;
+        document.getElementById("attachmentFormTitle").innerText = "Attachment";
+        document.getElementById("attachmentFilePickerRow").style.display = "none";
+        document.getElementById("uploadProgressBar").style.display = "none";
+        const name = att.filename || att.label || att.name || "Attachment";
+        const url = att.fileUrl || att.s3Url || att.url || "";
+        const currentFileEl = document.getElementById("attachmentCurrentFile");
+        currentFileEl.style.display = "block";
+        currentFileEl.innerHTML = url
+            ? `<a href="${url}" target="_blank" style="color:#0073bb; font-weight:bold;">📎 ${name}</a>`
+            : `📎 ${name}`;
+        const btnDel = document.getElementById("btnDeleteAttachmentInForm");
+        if (btnDel) btnDel.style.display = "inline-block";
+        document.getElementById("attachmentModal").style.display = "flex";
+    }
+
+    function closeAttachmentForm() {
+        document.getElementById("attachmentModal").style.display = "none";
+        editingAttachmentIdx = null;
+    }
+
+    function deleteAttachmentFromForm() {
+        if (editingAttachmentIdx === null) return;
+        currentItemAttachments.splice(editingAttachmentIdx, 1);
+        renderAttachmentCards();
+        closeAttachmentForm();
     }
 
         async function saveItem() {
@@ -928,11 +999,10 @@ async function handleAttachmentUpload() {
             name: file.name,
             url: localMockUrl
         });
-        renderModalAttachments();
+        renderAttachmentCards();
+        closeAttachmentForm();
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
-        
-        // 🔄 REPLACED ALERT IN MOCK MODE
         showSuccessToast(`Staged local mock for "${file.name}"`);
         return;
     }
@@ -970,9 +1040,8 @@ async function handleAttachmentUpload() {
             };
 
             currentItemAttachments.push(stagedAttachment);
-            renderModalAttachments();
-            
-            // 🔄 REPLACED ALERT
+            renderAttachmentCards();
+            closeAttachmentForm();
             showSuccessToast(`Staged "${file.name}"! Will save with item.`);
 
         } else {
@@ -1006,9 +1075,8 @@ async function handleAttachmentUpload() {
                 s3Url: att.fileUrl || att.s3Url
             }));
 
-            renderModalAttachments();
-            
-            // 🔄 REPLACED ALERT
+            renderAttachmentCards();
+            closeAttachmentForm();
             showSuccessToast(`Uploaded ${file.name} successfully!`);
         }
 
@@ -1082,7 +1150,7 @@ function renderNotesSection() {
 
         return `
             <div class="note-card" onclick="openEditNote('${note.noteId}')">
-                <div class="note-date">${note.date || "No date"}</div>
+                <div class="note-date">${formatDate(note.date) || "No date"}</div>
                 <div class="note-desc">${note.description || ""}</div>
                 ${attachLinks ? `<div class="note-links">${attachLinks}</div>` : ""}
             </div>`;
@@ -1093,12 +1161,14 @@ function openAddNote() {
     editingNoteId = null;
     currentNoteAttachments = [];
     document.getElementById("noteFormTitle").innerText = "Add Note";
-    document.getElementById("noteDate").value = new Date().toISOString().split("T")[0];
+    const _today = new Date();
+    const _localDate = _today.getFullYear() + "-" + String(_today.getMonth() + 1).padStart(2, "0") + "-" + String(_today.getDate()).padStart(2, "0");
+    document.getElementById("noteDate").value = _localDate;
     document.getElementById("noteDescription").value = "";
     renderNoteAttachmentList();
     const btnDel = document.getElementById("btnDeleteNoteInForm");
     if (btnDel) btnDel.style.display = "none";
-    document.getElementById("noteForm").style.display = "block";
+    document.getElementById("noteModal").style.display = "flex";
 }
 
 function openEditNote(noteId) {
@@ -1114,11 +1184,11 @@ function openEditNote(noteId) {
     renderNoteAttachmentList();
     const btnDel = document.getElementById("btnDeleteNoteInForm");
     if (btnDel) btnDel.style.display = "inline-block";
-    document.getElementById("noteForm").style.display = "block";
+    document.getElementById("noteModal").style.display = "flex";
 }
 
 function closeNoteForm() {
-    document.getElementById("noteForm").style.display = "none";
+    document.getElementById("noteModal").style.display = "none";
     editingNoteId = null;
     currentNoteAttachments = [];
 }
@@ -1157,7 +1227,8 @@ async function handleNoteAttachmentUpload() {
     const progressStatus = document.getElementById("noteUploadProgress");
 
     if (!fileInput || !fileInput.files.length) {
-        return alert("Please select a file first.");
+        alert("Please select a file first.");
+        return false;
     }
 
     const file = fileInput.files[0];
@@ -1176,7 +1247,7 @@ async function handleNoteAttachmentUpload() {
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
         showSuccessToast(`Staged "${file.name}" for note.`);
-        return;
+        return true;
     }
 
     try {
@@ -1226,8 +1297,10 @@ async function handleNoteAttachmentUpload() {
             renderNoteAttachmentList();
             showSuccessToast(`Uploaded "${file.name}" to note!`);
         }
+        return true;
     } catch (err) {
         alert(`Note attachment error: ${err.message}`);
+        return false;
     } finally {
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
@@ -1238,11 +1311,18 @@ async function saveNote() {
     const description = document.getElementById("noteDescription").value.trim();
     if (!description) return alert("Description is required.");
 
+    const noteFilePicker = document.getElementById("noteFilePicker");
+    if (noteFilePicker && noteFilePicker.files.length > 0) {
+        const uploaded = await handleNoteAttachmentUpload();
+        if (!uploaded) return;
+    }
+
     const date = document.getElementById("noteDate").value || new Date().toISOString().split("T")[0];
 
     const cleanedAttachments = currentNoteAttachments.map(att => ({
         attachmentId: att.attachmentId || `att-${Date.now()}`,
         filename: att.filename || att.label || "File",
+        label: att.filename || att.label || "File",
         fileUrl: att.fileUrl || att.s3Url || "",
         uploadedAt: att.uploadedAt || new Date().toISOString()
     }));
@@ -1374,7 +1454,7 @@ function renderPartsSection() {
             : "";
 
         const costDisplay = part.cost != null ? `$${Number(part.cost).toLocaleString()}` : "";
-        const meta = [part.purchaseDate, costDisplay, part.purchasedFrom, part.warrantyPeriod ? `Warranty: ${part.warrantyPeriod}` : ""]
+        const meta = [formatDate(part.purchaseDate), costDisplay, part.purchasedFrom, part.warrantyPeriod ? `Warranty: ${part.warrantyPeriod}` : ""]
             .filter(Boolean).join(" · ");
 
         return `
@@ -1391,14 +1471,15 @@ function openAddPart() {
     currentPartAttachments = [];
     document.getElementById("partFormTitle").innerText = "Add Part";
     document.getElementById("partName").value = "";
-    document.getElementById("partPurchaseDate").value = "";
+    const _t = new Date();
+    document.getElementById("partPurchaseDate").value = _t.getFullYear() + "-" + String(_t.getMonth() + 1).padStart(2, "0") + "-" + String(_t.getDate()).padStart(2, "0");
     document.getElementById("partCost").value = "";
     document.getElementById("partPurchasedFrom").value = "";
     document.getElementById("partWarrantyPeriod").value = "";
     renderPartAttachmentList();
     const btnDel = document.getElementById("btnDeletePartInForm");
     if (btnDel) btnDel.style.display = "none";
-    document.getElementById("partForm").style.display = "block";
+    document.getElementById("partModal").style.display = "flex";
 }
 
 function openEditPart(partId) {
@@ -1417,11 +1498,11 @@ function openEditPart(partId) {
     renderPartAttachmentList();
     const btnDel = document.getElementById("btnDeletePartInForm");
     if (btnDel) btnDel.style.display = "inline-block";
-    document.getElementById("partForm").style.display = "block";
+    document.getElementById("partModal").style.display = "flex";
 }
 
 function closePartForm() {
-    document.getElementById("partForm").style.display = "none";
+    document.getElementById("partModal").style.display = "none";
     editingPartId = null;
     currentPartAttachments = [];
 }
@@ -1460,7 +1541,8 @@ async function handlePartAttachmentUpload() {
     const progressStatus = document.getElementById("partUploadProgress");
 
     if (!fileInput || !fileInput.files.length) {
-        return alert("Please select a file first.");
+        alert("Please select a file first.");
+        return false;
     }
 
     const file = fileInput.files[0];
@@ -1479,7 +1561,7 @@ async function handlePartAttachmentUpload() {
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
         showSuccessToast(`Staged "${file.name}" for part.`);
-        return;
+        return true;
     }
 
     try {
@@ -1529,8 +1611,10 @@ async function handlePartAttachmentUpload() {
             renderPartAttachmentList();
             showSuccessToast(`Uploaded "${file.name}" to part!`);
         }
+        return true;
     } catch (err) {
         alert(`Part attachment error: ${err.message}`);
+        return false;
     } finally {
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
@@ -1541,9 +1625,16 @@ async function savePart() {
     const name = document.getElementById("partName").value.trim();
     if (!name) return alert("Name is required.");
 
+    const partFilePicker = document.getElementById("partFilePicker");
+    if (partFilePicker && partFilePicker.files.length > 0) {
+        const uploaded = await handlePartAttachmentUpload();
+        if (!uploaded) return;
+    }
+
     const cleanedAttachments = currentPartAttachments.map(att => ({
         attachmentId: att.attachmentId || `att-${Date.now()}`,
         filename: att.filename || att.label || "File",
+        label: att.filename || att.label || "File",
         fileUrl: att.fileUrl || att.s3Url || "",
         uploadedAt: att.uploadedAt || new Date().toISOString()
     }));
