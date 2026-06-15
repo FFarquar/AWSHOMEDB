@@ -577,7 +577,32 @@
     }
 
 // 🚀 ADD THIS NEW STATE CONTROLLER TO HANDLE DELETIONS MID-SESSION:
-    function removeAttachmentFromState(indexToDrop) {
+    async function removeAttachmentFromState(indexToDrop) {
+        const att = currentItemAttachments[indexToDrop];
+
+        if (editingItemId && att && att.attachmentId) {
+            try {
+                const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
+                const cleanItemId = String(editingItemId).replace("ITEM#", "").trim();
+                const res = await fetch(`${API}/attachments/delete`, {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
+                        sk: `ITEM#${cleanItemId.toUpperCase()}`,
+                        attachmentId: att.attachmentId
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || `Status ${res.status}`);
+                }
+            } catch (error) {
+                alert(`Failed to delete attachment: ${error.message}`);
+                return;
+            }
+        }
+
         currentItemAttachments.splice(indexToDrop, 1);
         updateModalAttachmentListUI();
         renderAttachmentCards();
@@ -672,10 +697,10 @@
         editingAttachmentIdx = null;
     }
 
-    function deleteAttachmentFromForm() {
+    async function deleteAttachmentFromForm() {
         if (editingAttachmentIdx === null) return;
-        currentItemAttachments.splice(editingAttachmentIdx, 1);
-        renderAttachmentCards();
+        await removeAttachmentFromState(editingAttachmentIdx);
+        editingAttachmentIdx = null;
         closeAttachmentForm();
     }
 
