@@ -578,10 +578,9 @@
 
 // 🚀 ADD THIS NEW STATE CONTROLLER TO HANDLE DELETIONS MID-SESSION:
     function removeAttachmentFromState(indexToDrop) {
-        // Drop the file entry cleanly out of our array workspace tracking index
         currentItemAttachments.splice(indexToDrop, 1);
-        // Force the list interface matrix view to re-render instantly on screen
         updateModalAttachmentListUI();
+        renderAttachmentCards();
     }
 
     function updateModalAttachmentListUI() {
@@ -630,8 +629,9 @@
         }
         list.innerHTML = currentItemAttachments.map((att, idx) => {
             const name = att.filename || att.label || att.name || "Attachment";
-            return `<div class="note-card" onclick="openEditAttachment(${idx})">
+            return `<div class="note-card" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="note-date">📎 ${name}</div>
+                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:14px; line-height:1; cursor:pointer; font-weight:bold; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
             </div>`;
         }).join("");
     }
