@@ -72,8 +72,17 @@
     function authHeaders() {
         return {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            "Authorization": `Bearer ${localStorage.getItem("authToken")}`
         };
+    }
+
+    function checkAuthResponse(res) {
+        if (res.status === 401 || res.status === 403) {
+            localStorage.clear();
+            window.location.href = "login.html";
+            return false;
+        }
+        return true;
     }
  // ==========================================
     // SECTION 1: CONTAINERS LOGIC METHODS
@@ -343,6 +352,7 @@
                     method: "GET",
                     headers: authHeaders()
                 });
+                if (!checkAuthResponse(res)) return;
                 if (!res.ok) throw new Error(`Error Status: ${res.status}`);
                 
                 const rawItems = await res.json();

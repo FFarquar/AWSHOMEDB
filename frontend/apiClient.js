@@ -2,6 +2,15 @@
 //Helper code to mock local data
 const USE_MOCK = window.APP_CONFIG?.USE_MOCK;
 
+function handleAuthError(res) {
+    if (res.status === 401 || res.status === 403) {
+        localStorage.clear();
+        window.location.href = "login.html";
+        return true;
+    }
+    return false;
+}
+
 async function apiGet(endpoint, mockFile) {
     if (USE_MOCK) {
         const res = await fetch(`./mockdata/${mockFile}`);
@@ -17,6 +26,7 @@ async function apiGet(endpoint, mockFile) {
         }
     });
 
+    if (handleAuthError(res)) return null;
     return await res.json();
 }
 
@@ -36,5 +46,6 @@ async function apiPost(endpoint, body) {
         body: JSON.stringify(body)
     });
 
+    if (handleAuthError(res)) return null;
     return await res.json();
 }
