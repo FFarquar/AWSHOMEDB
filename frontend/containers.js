@@ -692,7 +692,12 @@
         document.getElementById("attachmentModal").style.display = "flex";
     }
 
-    function closeAttachmentForm() {
+    async function closeAttachmentForm() {
+        const fileInput = document.getElementById("itemFilePicker");
+        if (fileInput && fileInput.files.length > 0) {
+            await handleAttachmentUpload();
+            return;
+        }
         document.getElementById("attachmentModal").style.display = "none";
         editingAttachmentIdx = null;
     }
