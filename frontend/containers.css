@@ -371,7 +371,7 @@
 
         /* --- Info card --- */
         .info-card {
-            font-size: 20px;
+            font-size: 26px;
         }
 
         /* --- Note cards --- */
@@ -452,7 +452,7 @@
             min-height: 82px;
         }
 
-        .info-card { font-size: 30px; }
+        .info-card { font-size: 40px; }
 
         .note-card { padding: 24px 26px; }
         .note-date { font-size: 28px; }
