@@ -1014,7 +1014,8 @@ async function handleAttachmentUpload() {
     }
     
     const file = fileInput.files[0];
-    
+    fileInput.value = ""; // clear early so closeAttachmentForm won't re-trigger upload
+
     if (progressStatus) {
         progressStatus.style.display = "block";
         progressStatus.innerText = "⏳ Processing file upload...";
