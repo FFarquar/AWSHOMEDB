@@ -13,17 +13,17 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || "{}");
-    
-    // Extracting the clean, flat fields directly matching your Postman payload
+
+    // Accept the same prefixed field names the frontend sends (matching items-create convention)
     const {
       itemName,
-      category,
-      purchasedFrom,
-      warrantyExpiryDate,
-      purchaseDate,
-      purchasePrice,
-      physicalPaperStorageLocation,
-      attachments
+      itemCategory,
+      itempurchasedFrom,
+      itemwarrantyPeriod,
+      itempurchaseDate,
+      itempurchasePrice,
+      itemphysicalPaperStorageLocation,
+      itemAttachments
     } = body;
 
     let updateExpression = "SET";
@@ -32,45 +32,45 @@ export const handler = async (event) => {
 
     if (itemName !== undefined) {
       updateExpression += " #name = :name, #itemName = :itemName,";
-      expressionAttributeNames["#name"] = "name";          
-      expressionAttributeNames["#itemName"] = "itemName";    
+      expressionAttributeNames["#name"] = "name";
+      expressionAttributeNames["#itemName"] = "itemName";
       expressionAttributeValues[":name"] = itemName;
       expressionAttributeValues[":itemName"] = itemName;
     }
-    if (category !== undefined) {
+    if (itemCategory !== undefined) {
       updateExpression += " #cat = :cat,";
-      expressionAttributeNames["#cat"] = "category";        
-      expressionAttributeValues[":cat"] = category;
+      expressionAttributeNames["#cat"] = "category";
+      expressionAttributeValues[":cat"] = itemCategory;
     }
-    if (purchasedFrom !== undefined) {
+    if (itempurchasedFrom !== undefined) {
       updateExpression += " #pf = :pf,";
-      expressionAttributeNames["#pf"] = "purchasedFrom";    
-      expressionAttributeValues[":pf"] = purchasedFrom;
+      expressionAttributeNames["#pf"] = "purchasedFrom";
+      expressionAttributeValues[":pf"] = itempurchasedFrom;
     }
-    if (warrantyExpiryDate !== undefined) {
+    if (itemwarrantyPeriod !== undefined) {
       updateExpression += " #wed = :wed,";
-      expressionAttributeNames["#wed"] = "warrantyExpiryDate"; 
-      expressionAttributeValues[":wed"] = warrantyExpiryDate;
+      expressionAttributeNames["#wed"] = "warrantyExpiryDate";
+      expressionAttributeValues[":wed"] = itemwarrantyPeriod;
     }
-    if (purchaseDate !== undefined) {
+    if (itempurchaseDate !== undefined) {
       updateExpression += " #pd = :pd,";
       expressionAttributeNames["#pd"] = "purchaseDate";
-      expressionAttributeValues[":pd"] = purchaseDate;
+      expressionAttributeValues[":pd"] = itempurchaseDate;
     }
-    if (purchasePrice !== undefined) {
+    if (itempurchasePrice !== undefined) {
       updateExpression += " #pp = :pp,";
       expressionAttributeNames["#pp"] = "purchasePrice";
-      expressionAttributeValues[":pp"] = Number(purchasePrice) || 0;
+      expressionAttributeValues[":pp"] = Number(itempurchasePrice) || 0;
     }
-    if (physicalPaperStorageLocation !== undefined) {
+    if (itemphysicalPaperStorageLocation !== undefined) {
       updateExpression += " #sl = :sl,";
       expressionAttributeNames["#sl"] = "physicalPaperStorageLocation";
-      expressionAttributeValues[":sl"] = physicalPaperStorageLocation;
+      expressionAttributeValues[":sl"] = itemphysicalPaperStorageLocation;
     }
-    if (attachments !== undefined) {
+    if (itemAttachments !== undefined) {
       updateExpression += " #at = :at,";
       expressionAttributeNames["#at"] = "attachments";
-      expressionAttributeValues[":at"] = attachments;
+      expressionAttributeValues[":at"] = itemAttachments;
     }
 
     if (updateExpression === "SET") {

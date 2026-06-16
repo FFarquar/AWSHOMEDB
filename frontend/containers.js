@@ -777,9 +777,20 @@
         };
 
         if (window.APP_CONFIG?.USE_MOCK) {
+            // Map prefixed payload keys to the flat names openItemEdit() reads (matching DynamoDB format)
+            const flatPayload = {
+                itemName: payload.itemName,
+                category: payload.itemCategory,
+                purchasedFrom: payload.itempurchasedFrom,
+                purchasePrice: payload.itempurchasePrice,
+                purchaseDate: payload.itempurchaseDate,
+                warrantyExpiryDate: payload.itemwarrantyPeriod,
+                physicalPaperStorageLocation: payload.itemphysicalPaperStorageLocation,
+                attachments: payload.itemAttachments
+            };
             if (editingItemId) {
                 const idx = childItems.findIndex(i => i.itemId === editingItemId && i.containerId === activeShortContainerId);
-                if (idx !== -1) Object.assign(childItems[idx], payload);
+                if (idx !== -1) Object.assign(childItems[idx], flatPayload);
             } else {
                 const generatedId = "ITEM" + Date.now();
                 childItems.push({
@@ -788,8 +799,8 @@
                     entityType: "ITEM",
                     containerId: activeShortContainerId,
                     itemId: generatedId,
-                    createdDate: new Date().toISOString().split('T'),
-                    ...payload
+                    createdDate: new Date().toISOString().split('T')[0],
+                    ...flatPayload
                 });
             }
             closeItemModal();
