@@ -67,7 +67,36 @@
             .catch(() => {});
 
         loadContainers();
+
+        history.replaceState({ view: 'app' }, '');
+        history.pushState({ view: 'app' }, '');
+        window.addEventListener('popstate', handlePopState);
     });
+
+    function handlePopState() {
+        const isOpen = id => {
+            const el = document.getElementById(id);
+            return el && el.style.display && el.style.display !== 'none';
+        };
+
+        if (isOpen('noteModal'))       { closeNoteForm();        history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('partModal'))       { closePartForm();        history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('attachmentModal')) { closeAttachmentForm();  history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('deleteConfirmModal')) { closeDeleteModal();  history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('itemModal'))       { closeItemModal();       history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('modal'))           { closeModal();           history.pushState({ view: 'app' }, ''); return; }
+
+        const itemsPanel = document.getElementById('itemsPanelView');
+        if (itemsPanel && itemsPanel.style.display !== 'none') {
+            activeShortContainerId = null;
+            itemsPanel.style.display = 'none';
+            document.getElementById('containersPanelView').style.display = 'block';
+            history.pushState({ view: 'app' }, '');
+            return;
+        }
+
+        history.pushState({ view: 'app' }, '');
+    }
 
     function authHeaders() {
         return {
@@ -314,6 +343,7 @@
         // View panel display visibility toggles
         document.getElementById("containersPanelView").style.display = "none";
         document.getElementById("itemsPanelView").style.display = "flex";
+        history.pushState({ view: 'items' }, '');
 
         await loadItems();
     }
