@@ -237,6 +237,27 @@ Resources:
             Method: DELETE
 
   # =========================
+  # CATEGORIES
+  # =========================
+
+  CategoriesListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/categories/categories-list.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetCategories:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /categories
+            Method: GET
+
+  # =========================
   # NOTES
   # =========================
 

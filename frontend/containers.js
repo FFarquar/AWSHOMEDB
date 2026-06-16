@@ -67,6 +67,7 @@
             .catch(() => {});
 
         loadContainers();
+        loadCategories();
 
         history.replaceState({ view: 'app' }, '');
         history.pushState({ view: 'app' }, '');
@@ -113,6 +114,44 @@
         }
         return true;
     }
+ // ==========================================
+    // CATEGORIES
+    // ==========================================
+    async function loadCategories() {
+        if (window.APP_CONFIG?.USE_MOCK) return; // mock mode: populated via syncCategoryDatalist() after loadItems
+        try {
+            const categories = await apiGet("/categories");
+            if (!Array.isArray(categories)) return;
+            populateCategoryDatalist(categories);
+        } catch (err) {
+            console.warn("Could not load categories:", err.message);
+        }
+    }
+
+    function syncCategoryDatalist() {
+        const cats = [...new Set(
+            (childItems || []).map(i => i.category).filter(c => c && c.trim())
+        )].sort();
+        populateCategoryDatalist(cats);
+    }
+
+    function populateCategoryDatalist(categories) {
+        const datalist = document.getElementById("categoryOptions");
+        if (!datalist) return;
+        const existing = new Set([...datalist.options].map(o => o.value));
+        categories.forEach(c => {
+            if (!existing.has(c)) {
+                const opt = document.createElement("option");
+                opt.value = c;
+                datalist.appendChild(opt);
+            }
+        });
+    }
+
+    function addCategoryToDatalist(category) {
+        if (category && category.trim()) populateCategoryDatalist([category.trim()]);
+    }
+
  // ==========================================
     // SECTION 1: CONTAINERS LOGIC METHODS
     // ==========================================
@@ -415,6 +454,7 @@
                 return;
             }
         }
+        if (window.APP_CONFIG?.USE_MOCK) syncCategoryDatalist();
         renderItemsTable();
     }
 
@@ -803,6 +843,7 @@
                     ...flatPayload
                 });
             }
+            addCategoryToDatalist(payload.itemCategory);
             closeItemModal();
             showSuccessToast('Item saved successfully to the local mock!');
             renderItemsTable();
@@ -826,10 +867,12 @@
 
             // Fetch the updated dataset completely from AWS
             await loadItems();
-            
+
+            addCategoryToDatalist(payload.itemCategory);
+
             // Close the form modal safely
             closeItemModal();
-            
+
             // alert("Item saved successfully to the database!");
             showSuccessToast('Item saved successfully to the database!');
 
