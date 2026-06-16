@@ -759,8 +759,11 @@
         }
         list.innerHTML = currentItemAttachments.map((att, idx) => {
             const name = att.filename || att.label || att.name || "Attachment";
+            const url = att.fileUrl || att.s3Url || att.url || "";
+            const safeName = name.replace(/'/g, "\\'");
+            const safeUrl = url.replace(/'/g, "\\'");
             return `<div class="note-card" style="display:flex; justify-content:space-between; align-items:center;">
-                <div class="note-date">📎 ${name}</div>
+                <a href="#" class="note-att-link" onclick="confirmDownload(event, '${safeUrl}', '${safeName}'); return false;" style="color:#0073bb; text-decoration:none; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">📎 ${name}</a>
                 <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:20px; height:20px; min-width:20px; min-height:20px; max-width:20px; max-height:20px; font-size:14px; line-height:20px; cursor:pointer; font-weight:bold; flex-shrink:0; align-self:center; text-align:center; padding:0; overflow:hidden; box-sizing:border-box;">×</button>
             </div>`;
         }).join("");
