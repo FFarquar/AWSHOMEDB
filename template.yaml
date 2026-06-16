@@ -742,6 +742,44 @@ Resources:
             Path: /admin/users/{loginID}
             Method: DELETE
 
+  # =========================
+  # UPLOAD SETTINGS
+  # =========================
+
+  SettingsGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/admin/settings-get.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        GetSettings:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /settings
+            Method: GET
+
+  SettingsUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/admin/settings-update.handler
+      Runtime: nodejs24.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AWSHomeDBTable
+      Events:
+        PutSettings:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyServerlessApi
+            Path: /admin/settings
+            Method: PUT
+
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL"

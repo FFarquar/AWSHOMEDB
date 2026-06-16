@@ -30,6 +30,8 @@
     let editingPartId = null;        // partId of the part being edited (null = adding new)
     let currentPartAttachments = []; // Attachments staged for the part form
 
+    let uploadSettings = { pdfSizeLimitMB: 5, imageCompressionEnabled: true };
+
     let editingAttachmentIdx = null; // Index in currentItemAttachments being viewed/deleted
 
     let editingId = null;       // Tracks primary container PK edits
@@ -73,6 +75,7 @@
 
         loadContainers();
         loadCategories();
+        fetchUploadSettings();
 
         history.replaceState({ view: 'app' }, '');
         history.pushState({ view: 'app' }, '');
@@ -758,7 +761,7 @@
             const name = att.filename || att.label || att.name || "Attachment";
             return `<div class="note-card" style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="note-date">📎 ${name}</div>
-                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:14px; line-height:1; cursor:pointer; font-weight:bold; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
+                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:20px; height:20px; min-width:20px; min-height:20px; max-width:20px; max-height:20px; font-size:14px; line-height:20px; cursor:pointer; font-weight:bold; flex-shrink:0; align-self:center; text-align:center; padding:0; overflow:hidden; box-sizing:border-box;">×</button>
             </div>`;
         }).join("");
     }
@@ -1157,35 +1160,38 @@ async function handleAttachmentUpload() {
     }
 
     try {
+        const fileToUpload = await checkAndPrepareFile(file, progressStatus);
+        if (!fileToUpload) return;
+
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
 
-        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(fileToUpload.name)}&contentType=${encodeURIComponent(fileToUpload.type)}`;
         const res = await fetch(presignPath, { headers: authHeaders() });
         if (!res.ok) throw new Error("Failed getting secure token path.");
-        
+
         const { uploadUrl, fileUrl } = await res.json();
 
         if (progressStatus) progressStatus.innerText = "⏳ Streaming file directly to S3...";
 
         const uploadRes = await fetch(uploadUrl, {
             method: "PUT",
-            headers: { "Content-Type": file.type },
-            body: file
+            headers: { "Content-Type": fileToUpload.type },
+            body: fileToUpload
         });
         if (!uploadRes.ok) throw new Error("S3 gateway rejected target asset payload stream.");
 
         if (!editingItemId) {
-            // 💡 PATHWAY A: BRAND NEW ITEM 
+            // 💡 PATHWAY A: BRAND NEW ITEM
             console.log("📝 Staging attachment locally until item creation is finalized.");
-            
+
             const stagedAttachment = {
                 attachmentId: `att-${Date.now()}`,
-                filename: file.name,
+                filename: fileToUpload.name,
                 fileUrl: fileUrl,
-                label: file.name,      
-                s3Url: fileUrl,        
-                name: file.name,       
-                url: fileUrl           
+                label: fileToUpload.name,
+                s3Url: fileUrl,
+                name: fileToUpload.name,
+                url: fileUrl
             };
 
             currentItemAttachments.push(stagedAttachment);
@@ -1194,16 +1200,16 @@ async function handleAttachmentUpload() {
             showSuccessToast(`Staged "${file.name}"! Will save with item.`);
 
         } else {
-            // 💡 PATHWAY B: EXISTING ITEM 
+            // 💡 PATHWAY B: EXISTING ITEM
             if (progressStatus) progressStatus.innerText = "⏳ Logging file metadata to database...";
 
             const cleanContainerId = String(activeShortContainerId).replace("CONTAINER#", "").trim();
             const cleanItemId = String(editingItemId).replace("ITEM#", "").trim();
 
             const dbPayload = {
-                pk: `CONTAINER#${cleanContainerId.toUpperCase()}`, 
-                sk: `ITEM#${cleanItemId}`,           
-                filename: file.name,
+                pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
+                sk: `ITEM#${cleanItemId}`,
+                filename: fileToUpload.name,
                 fileUrl: fileUrl
             };
 
@@ -1212,7 +1218,7 @@ async function handleAttachmentUpload() {
                 headers: { ...authHeaders(), "Content-Type": "application/json" },
                 body: JSON.stringify(dbPayload)
             });
-            
+
             if (!dbRes.ok) throw new Error("Failed to link file to database row.");
 
             const dbResult = await dbRes.json();
@@ -1400,23 +1406,26 @@ async function handleNoteAttachmentUpload() {
     }
 
     try {
+        const fileToUpload = await checkAndPrepareFile(file, progressStatus);
+        if (!fileToUpload) return false;
+
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
-        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(fileToUpload.name)}&contentType=${encodeURIComponent(fileToUpload.type)}`;
         const res = await fetch(presignPath, { headers: authHeaders() });
         if (!res.ok) throw new Error("Failed to get presigned URL.");
         const { uploadUrl, fileUrl } = await res.json();
 
         if (progressStatus) progressStatus.innerText = "⏳ Uploading to S3...";
-        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": fileToUpload.type }, body: fileToUpload });
         if (!uploadRes.ok) throw new Error("S3 upload failed.");
 
         if (!editingNoteId) {
             // New note: stage locally until note is saved
             currentNoteAttachments.push({
                 attachmentId: `att-${Date.now()}`,
-                filename: file.name,
+                filename: fileToUpload.name,
                 fileUrl,
-                label: file.name,
+                label: fileToUpload.name,
                 s3Url: fileUrl
             });
             renderNoteAttachmentList();
@@ -1428,7 +1437,7 @@ async function handleNoteAttachmentUpload() {
             const dbPayload = {
                 pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
                 sk: `NOTE#${editingItemId}#${editingNoteId}`,
-                filename: file.name,
+                filename: fileToUpload.name,
                 fileUrl
             };
             const dbRes = await fetch(`${API}/attachments`, {
@@ -1714,23 +1723,26 @@ async function handlePartAttachmentUpload() {
     }
 
     try {
+        const fileToUpload = await checkAndPrepareFile(file, progressStatus);
+        if (!fileToUpload) return false;
+
         if (progressStatus) progressStatus.innerText = "⏳ Contacting AWS S3 Storage Gateway...";
-        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+        const presignPath = `${API}/attachments/presign?filename=${encodeURIComponent(fileToUpload.name)}&contentType=${encodeURIComponent(fileToUpload.type)}`;
         const res = await fetch(presignPath, { headers: authHeaders() });
         if (!res.ok) throw new Error("Failed to get presigned URL.");
         const { uploadUrl, fileUrl } = await res.json();
 
         if (progressStatus) progressStatus.innerText = "⏳ Uploading to S3...";
-        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+        const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": fileToUpload.type }, body: fileToUpload });
         if (!uploadRes.ok) throw new Error("S3 upload failed.");
 
         if (!editingPartId) {
             // New part: stage locally until part is saved
             currentPartAttachments.push({
                 attachmentId: `att-${Date.now()}`,
-                filename: file.name,
+                filename: fileToUpload.name,
                 fileUrl,
-                label: file.name,
+                label: fileToUpload.name,
                 s3Url: fileUrl
             });
             renderPartAttachmentList();
@@ -1742,7 +1754,7 @@ async function handlePartAttachmentUpload() {
             const dbPayload = {
                 pk: `CONTAINER#${cleanContainerId.toUpperCase()}`,
                 sk: `PART#${editingItemId}#${editingPartId}`,
-                filename: file.name,
+                filename: fileToUpload.name,
                 fileUrl
             };
             const dbRes = await fetch(`${API}/attachments`, {
@@ -1883,6 +1895,7 @@ function openAdminPanel() {
     document.getElementById("adminModal").style.display = "flex";
     history.pushState({ view: 'app' }, '');
     loadAdminUsers();
+    loadAdminSettings();
 }
 
 function closeAdminPanel() {
@@ -2118,4 +2131,160 @@ async function finalizeAdminUserDelete(loginID) {
     } catch (err) {
         alert(`Failed to delete user: ${err.message}`);
     }
+}
+
+// ==========================================
+// SECTION: UPLOAD SETTINGS & FILE PROCESSING
+// ==========================================
+
+async function fetchUploadSettings() {
+    try {
+        let data;
+        if (window.APP_CONFIG?.USE_MOCK) {
+            const res = await fetch('./mockdata/mock-admin-settings.json');
+            data = await res.json();
+        } else {
+            const res = await fetch(`${API}/settings`, { headers: authHeaders() });
+            if (!res.ok) return;
+            data = await res.json();
+        }
+        uploadSettings = { ...uploadSettings, ...data };
+    } catch (err) {
+        console.warn("Could not load upload settings, using defaults.");
+    }
+}
+
+async function loadAdminSettings() {
+    const pdfInput = document.getElementById("adminPdfSizeLimit");
+    const compressionSelect = document.getElementById("adminImageCompressionEnabled");
+    if (!pdfInput || !compressionSelect) return;
+
+    try {
+        let data;
+        if (window.APP_CONFIG?.USE_MOCK) {
+            data = uploadSettings;
+        } else {
+            const res = await fetch(`${API}/settings`, { headers: authHeaders() });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            data = await res.json();
+        }
+        pdfInput.value = data.pdfSizeLimitMB ?? 5;
+        compressionSelect.value = data.imageCompressionEnabled !== false ? "true" : "false";
+    } catch (err) {
+        console.error("Failed to load upload settings:", err);
+    }
+}
+
+async function saveAdminSettings() {
+    const pdfInput = document.getElementById("adminPdfSizeLimit");
+    const compressionSelect = document.getElementById("adminImageCompressionEnabled");
+
+    const pdfSizeLimitMB = Number(pdfInput?.value);
+    if (!pdfSizeLimitMB || pdfSizeLimitMB <= 0) return alert("PDF size limit must be a positive number.");
+
+    const imageCompressionEnabled = compressionSelect?.value === "true";
+    const payload = { pdfSizeLimitMB, imageCompressionEnabled };
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        uploadSettings = payload;
+        showSuccessToast("Upload settings saved (mock mode).");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/admin/settings`, {
+            method: "PUT",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (!checkAuthResponse(res)) return;
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.message || `Status: ${res.status}`);
+        }
+        uploadSettings = payload;
+        showSuccessToast("Upload settings saved.");
+    } catch (err) {
+        alert(`Failed to save settings: ${err.message}`);
+    }
+}
+
+async function compressImage(file) {
+    const TARGET_SIZE = 1 * 1024 * 1024; // 1 MB
+    const MAX_DIMENSION = 2000;
+    const MAX_QUALITY = 0.85;
+    const MIN_QUALITY = 0.3;
+    const QUALITY_STEP = 0.1;
+
+    if (file.size <= TARGET_SIZE) return file;
+
+    return new Promise((resolve) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+
+            let { width, height } = img;
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+
+            let quality = MAX_QUALITY;
+
+            const tryCompress = () => {
+                canvas.toBlob((blob) => {
+                    if (!blob) return resolve(file);
+
+                    if (blob.size <= TARGET_SIZE || quality <= MIN_QUALITY) {
+                        const compressedName = file.name.replace(/\.[^.]+$/, ".jpg");
+                        resolve(new File([blob], compressedName, { type: "image/jpeg" }));
+                    } else {
+                        quality = Math.max(MIN_QUALITY, parseFloat((quality - QUALITY_STEP).toFixed(2)));
+                        tryCompress();
+                    }
+                }, "image/jpeg", quality);
+            };
+
+            tryCompress();
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(file); // fall back to original if image fails to load
+        };
+
+        img.src = objectUrl;
+    });
+}
+
+async function checkAndPrepareFile(file, progressEl) {
+    const isPDF = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+
+    if (isPDF) {
+        const limitBytes = (uploadSettings.pdfSizeLimitMB || 5) * 1024 * 1024;
+        if (file.size > limitBytes) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+            const proceed = window.confirm(
+                `"${file.name}" is ${sizeMB} MB, which exceeds the ${uploadSettings.pdfSizeLimitMB} MB PDF limit.\n\nUpload anyway?`
+            );
+            if (!proceed) return null;
+        }
+        return file;
+    }
+
+    if (isImage && uploadSettings.imageCompressionEnabled) {
+        if (progressEl) progressEl.innerText = "⏳ Compressing image...";
+        return await compressImage(file);
+    }
+
+    return file;
 }

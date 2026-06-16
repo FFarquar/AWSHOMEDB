@@ -311,6 +311,27 @@
                     <tbody id="adminUsersTableBody"></tbody>
                 </table>
             </div>
+
+            <hr style="margin:20px 0; border:none; border-top:1px solid #e0e0e0;">
+            <h3 style="margin:0 0 14px 0;">Upload Settings</h3>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <label style="min-width:180px; font-size:14px; font-weight:500;">PDF Size Limit</label>
+                <input type="number" id="adminPdfSizeLimit" min="1" max="500" step="1"
+                    style="width:80px; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:14px;">
+                <span style="font-size:14px; color:#555;">MB</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <label style="min-width:180px; font-size:14px; font-weight:500;">Image Compression</label>
+                <select id="adminImageCompressionEnabled"
+                    style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:14px; background:white;">
+                    <option value="true">Enabled (target under 1 MB)</option>
+                    <option value="false">Disabled</option>
+                </select>
+            </div>
+            <div style="margin-bottom:4px;">
+                <button class="btn-primary" onclick="saveAdminSettings()" style="font-size:14px; min-height:36px; padding:6px 14px;">Save Settings</button>
+            </div>
+
             <div class="actions" style="margin-top:16px; justify-content:flex-end;">
                 <button class="btn-secondary" onclick="closeAdminPanel()">Close</button>
             </div>
