@@ -71,6 +71,10 @@
                 </div>
             </div>
 
+            <div class="mobile-items-header">
+                <span>Item</span>
+                <span>Purchase Date</span>
+            </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -132,10 +136,10 @@
             </div>
 
             <!-- 📎 ATTACHMENTS COLLECTION SECTION -->
-            <div style="background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
+            <div id="attachmentsSection" style="background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Attachments Collection</strong></label>
-                    <button type="button" onclick="openAddAttachment()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Attachment</button>
+                    <button type="button" class="btn-add-collection" onclick="openAddAttachment()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Attachment</button>
                 </div>
                 <div id="attachmentCardsList" style="max-height:220px; overflow-y:auto; margin-bottom:8px;"></div>
             </div>
@@ -144,7 +148,7 @@
             <div id="notesSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Notes Collection</strong></label>
-                    <button type="button" onclick="openAddNote()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Note</button>
+                    <button type="button" class="btn-add-collection" onclick="openAddNote()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Note</button>
                 </div>
 
                 <!-- Existing notes render here -->
@@ -156,7 +160,7 @@
             <div id="partsSection" style="display:none; background:#f2f3f5; border-radius:8px; padding:14px; margin-top:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label><strong>Parts Collection</strong></label>
-                    <button type="button" onclick="openAddPart()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Part</button>
+                    <button type="button" class="btn-add-collection" onclick="openAddPart()" style="padding:0 10px; background:#0073bb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ Add Part</button>
                 </div>
 
                 <!-- Existing parts render here -->
