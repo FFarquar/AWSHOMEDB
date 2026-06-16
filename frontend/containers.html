@@ -20,6 +20,7 @@
         <div style="display:flex; align-items:center; gap:14px;">
             <span id="versionBadge"></span>
             <button class="btn-secondary" onclick="logout()">Logout</button>
+            <button id="btnAdminPanel" class="btn-primary" onclick="openAdminPanel()" style="display:none;">Admin</button>
         </div>
     </header>
 
@@ -287,6 +288,96 @@
         </div>
     </div>
 
+
+    <!-- ========================================== -->
+    <!-- ADMIN PANEL: USER MANAGEMENT              -->
+    <!-- ========================================== -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content" style="max-width:720px; width:95%;">
+            <h3 style="margin-top:0;">User Management</h3>
+            <div style="margin-bottom:12px;">
+                <button class="btn-primary" onclick="openAdminUserForm()" style="font-size:14px; min-height:36px; padding:6px 14px;">+ Add User</button>
+            </div>
+            <div class="table-wrapper">
+                <table style="min-width:400px;">
+                    <thead>
+                        <tr>
+                            <th>Login ID</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUsersTableBody"></tbody>
+                </table>
+            </div>
+            <div class="actions" style="margin-top:16px; justify-content:flex-end;">
+                <button class="btn-secondary" onclick="closeAdminPanel()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ADMIN: ADD / EDIT USER FORM               -->
+    <!-- ========================================== -->
+    <div class="modal" id="adminUserFormModal" style="z-index:1100;">
+        <div class="modal-content" style="max-width:420px;">
+            <h3 id="adminUserFormTitle" style="margin-top:0;">Add User</h3>
+            <div class="form-group" id="adminLoginIdGroup">
+                <label>Login ID *</label>
+                <input id="adminLoginId" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label>Role *</label>
+                <select id="adminRole" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; margin-top:4px; background:white;">
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="USER" selected>USER</option>
+                    <option value="GUEST">GUEST</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="adminActive" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; margin-top:4px; background:white;">
+                    <option value="true" selected>Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+            <div class="form-group" id="adminPasswordGroup">
+                <label>Password *</label>
+                <input id="adminPassword" type="password" autocomplete="new-password" />
+            </div>
+            <div class="form-group" id="adminPasswordConfirmGroup">
+                <label>Confirm Password *</label>
+                <input id="adminPasswordConfirm" type="password" autocomplete="new-password" />
+            </div>
+            <div class="actions">
+                <button class="btn-primary" onclick="saveAdminUser()">Save</button>
+                <button class="btn-secondary" onclick="closeAdminUserForm()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ADMIN: CHANGE PASSWORD FORM               -->
+    <!-- ========================================== -->
+    <div class="modal" id="adminPasswordModal" style="z-index:1100;">
+        <div class="modal-content" style="max-width:420px;">
+            <h3 style="margin-top:0;">Change Password</h3>
+            <p id="adminPwdTarget" style="font-size:14px; color:#555; margin-bottom:16px;"></p>
+            <div class="form-group">
+                <label>New Password *</label>
+                <input id="adminNewPassword" type="password" autocomplete="new-password" />
+            </div>
+            <div class="form-group">
+                <label>Confirm Password *</label>
+                <input id="adminConfirmPassword" type="password" autocomplete="new-password" />
+            </div>
+            <div class="actions">
+                <button class="btn-primary" onclick="saveAdminPassword()">Update Password</button>
+                <button class="btn-secondary" onclick="closeAdminPasswordModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <script src="containers.js"></script>
 </body>

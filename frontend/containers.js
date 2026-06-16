@@ -57,7 +57,13 @@
             if (btnNewI) btnNewI.style.display = "none";
         }
 
-        // 3. Display build version in header
+        // 3. Show admin panel button only for admins
+        if (isAdmin) {
+            const btnAdmin = document.getElementById("btnAdminPanel");
+            if (btnAdmin) btnAdmin.style.display = "";
+        }
+
+        // 4. Display build version in header
         fetch("version.json")
             .then(r => r.json())
             .then(v => {
@@ -80,12 +86,15 @@
             return el && el.style.display && el.style.display !== 'none';
         };
 
-        if (isOpen('noteModal'))       { closeNoteForm();        history.pushState({ view: 'app' }, ''); return; }
-        if (isOpen('partModal'))       { closePartForm();        history.pushState({ view: 'app' }, ''); return; }
-        if (isOpen('attachmentModal')) { closeAttachmentForm();  history.pushState({ view: 'app' }, ''); return; }
-        if (isOpen('deleteConfirmModal')) { closeDeleteModal();  history.pushState({ view: 'app' }, ''); return; }
-        if (isOpen('itemModal'))       { closeItemModal();       history.pushState({ view: 'app' }, ''); return; }
-        if (isOpen('modal'))           { closeModal();           history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('noteModal'))          { closeNoteForm();             history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('partModal'))          { closePartForm();             history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('attachmentModal'))    { closeAttachmentForm();       history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('deleteConfirmModal')) { closeDeleteModal();          history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('itemModal'))          { closeItemModal();            history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('modal'))              { closeModal();                history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('adminPasswordModal')) { closeAdminPasswordModal();   history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('adminUserFormModal')) { closeAdminUserForm();        history.pushState({ view: 'app' }, ''); return; }
+        if (isOpen('adminModal'))         { closeAdminPanel();           history.pushState({ view: 'app' }, ''); return; }
 
         const itemsPanel = document.getElementById('itemsPanelView');
         if (itemsPanel && itemsPanel.style.display !== 'none') {
@@ -1034,6 +1043,8 @@
             await finalizeNoteDelete(targetId);
         } else if (targetType === "PART") {
             await finalizePartDelete(targetId);
+        } else if (targetType === "USER") {
+            await finalizeAdminUserDelete(targetId);
         }
     }
 
@@ -1843,5 +1854,255 @@ async function finalizePartDelete(partId) {
         showSuccessToast("Part deleted successfully.");
     } catch (err) {
         alert(`Failed to delete part: ${err.message}`);
+    }
+}
+
+// ==========================================
+// ADMIN USER MANAGEMENT
+// ==========================================
+
+let adminEditingLoginId = null;
+let adminPasswordTargetLoginId = null;
+let adminUsers = [];
+
+function openAdminPanel() {
+    if (!isAdmin) return;
+    document.getElementById("adminModal").style.display = "flex";
+    history.pushState({ view: 'app' }, '');
+    loadAdminUsers();
+}
+
+function closeAdminPanel() {
+    document.getElementById("adminModal").style.display = "none";
+}
+
+async function loadAdminUsers() {
+    const tbody = document.getElementById("adminUsersTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="4" style="color:#888; font-style:italic;">Loading users...</td></tr>`;
+
+    try {
+        let users;
+        if (window.APP_CONFIG?.USE_MOCK) {
+            const res = await fetch('./mockdata/mock-admin-users.json');
+            users = await res.json();
+        } else {
+            const res = await fetch(`${API}/admin/users`, { headers: authHeaders() });
+            if (!checkAuthResponse(res)) return;
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            users = await res.json();
+        }
+        adminUsers = Array.isArray(users) ? users : [];
+        renderAdminUsers(adminUsers);
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:#c00;">Failed to load users: ${err.message}</td></tr>`;
+    }
+}
+
+function renderAdminUsers(users) {
+    const tbody = document.getElementById("adminUsersTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const currentLoginID = localStorage.getItem("userLoginID") || "";
+
+    if (users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">No users found.</td></tr>`;
+        return;
+    }
+
+    users.forEach(u => {
+        const isSelf = u.loginID === currentLoginID;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${u.loginID}</strong>${isSelf ? ' <span style="font-size:11px; color:#888; font-weight:normal;">(you)</span>' : ''}</td>
+            <td>${u.role}</td>
+            <td>${u.active
+                ? '<span style="color:#137333; font-weight:600;">Active</span>'
+                : '<span style="color:#999;">Inactive</span>'
+            }</td>
+            <td style="white-space:nowrap; display:flex; gap:6px; flex-wrap:wrap;">
+                <button onclick="openAdminEditUser('${u.loginID}','${u.role}',${!!u.active})"
+                    style="padding:4px 10px; font-size:12px; min-height:28px; background:#0073bb; color:white; border:none; border-radius:4px; cursor:pointer;">Edit</button>
+                <button onclick="openAdminPasswordModal('${u.loginID}')"
+                    style="padding:4px 10px; font-size:12px; min-height:28px; background:#555; color:white; border:none; border-radius:4px; cursor:pointer;">Password</button>
+                <button onclick="confirmAdminDeleteUser('${u.loginID}',${isSelf})"
+                    style="padding:4px 10px; font-size:12px; min-height:28px; background:#ff4d4d; color:white; border:none; border-radius:4px; cursor:pointer;"
+                    ${isSelf ? 'disabled title="Cannot delete your own account"' : ''}>Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openAdminUserForm() {
+    adminEditingLoginId = null;
+    document.getElementById("adminUserFormTitle").textContent = "Add User";
+    document.getElementById("adminLoginId").value = "";
+    document.getElementById("adminLoginId").disabled = false;
+    document.getElementById("adminLoginIdGroup").style.display = "block";
+    document.getElementById("adminRole").value = "USER";
+    document.getElementById("adminActive").value = "true";
+    document.getElementById("adminPassword").value = "";
+    document.getElementById("adminPasswordGroup").style.display = "block";
+    document.getElementById("adminPasswordConfirm").value = "";
+    document.getElementById("adminPasswordConfirmGroup").style.display = "block";
+    document.getElementById("adminUserFormModal").style.display = "flex";
+    history.pushState({ view: 'app' }, '');
+}
+
+function openAdminEditUser(loginID, role, active) {
+    adminEditingLoginId = loginID;
+    document.getElementById("adminUserFormTitle").textContent = "Edit User";
+    document.getElementById("adminLoginId").value = loginID;
+    document.getElementById("adminLoginId").disabled = true;
+    document.getElementById("adminLoginIdGroup").style.display = "block";
+    document.getElementById("adminRole").value = role;
+    document.getElementById("adminActive").value = active ? "true" : "false";
+    document.getElementById("adminPasswordGroup").style.display = "none";
+    document.getElementById("adminPasswordConfirmGroup").style.display = "none";
+    document.getElementById("adminPassword").value = "";
+    document.getElementById("adminPasswordConfirm").value = "";
+    document.getElementById("adminUserFormModal").style.display = "flex";
+    history.pushState({ view: 'app' }, '');
+}
+
+function closeAdminUserForm() {
+    document.getElementById("adminUserFormModal").style.display = "none";
+    adminEditingLoginId = null;
+}
+
+async function saveAdminUser() {
+    const role = document.getElementById("adminRole").value;
+    const active = document.getElementById("adminActive").value === "true";
+
+    if (adminEditingLoginId) {
+        if (window.APP_CONFIG?.USE_MOCK) {
+            const idx = adminUsers.findIndex(u => u.loginID === adminEditingLoginId);
+            if (idx !== -1) adminUsers[idx] = { ...adminUsers[idx], role, active };
+            closeAdminUserForm();
+            renderAdminUsers(adminUsers);
+            showSuccessToast("User updated.");
+            return;
+        }
+        try {
+            const res = await fetch(`${API}/admin/users/${adminEditingLoginId}`, {
+                method: "PUT",
+                headers: authHeaders(),
+                body: JSON.stringify({ role, active })
+            });
+            if (!checkAuthResponse(res)) return;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || `Status: ${res.status}`);
+            closeAdminUserForm();
+            showSuccessToast("User updated successfully.");
+            await loadAdminUsers();
+        } catch (err) {
+            alert(`Failed to update user: ${err.message}`);
+        }
+    } else {
+        const loginID = document.getElementById("adminLoginId").value.trim();
+        const password = document.getElementById("adminPassword").value;
+        const confirmPassword = document.getElementById("adminPasswordConfirm").value;
+        if (!loginID) return alert("Login ID is required.");
+        if (!password) return alert("Password is required.");
+        if (password.length < 6) return alert("Password must be at least 6 characters.");
+        if (password !== confirmPassword) return alert("Passwords do not match.");
+
+        if (window.APP_CONFIG?.USE_MOCK) {
+            if (adminUsers.some(u => u.loginID === loginID)) return alert("A user with this Login ID already exists.");
+            adminUsers.push({ loginID, role, active });
+            closeAdminUserForm();
+            renderAdminUsers(adminUsers);
+            showSuccessToast("User created.");
+            return;
+        }
+        try {
+            const res = await fetch(`${API}/admin/users`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ loginID, password, role, active })
+            });
+            if (!checkAuthResponse(res)) return;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || `Status: ${res.status}`);
+            closeAdminUserForm();
+            showSuccessToast("User created successfully.");
+            await loadAdminUsers();
+        } catch (err) {
+            alert(`Failed to create user: ${err.message}`);
+        }
+    }
+}
+
+function openAdminPasswordModal(loginID) {
+    adminPasswordTargetLoginId = loginID;
+    document.getElementById("adminPwdTarget").textContent = `Changing password for: ${loginID}`;
+    document.getElementById("adminNewPassword").value = "";
+    document.getElementById("adminConfirmPassword").value = "";
+    document.getElementById("adminPasswordModal").style.display = "flex";
+    history.pushState({ view: 'app' }, '');
+}
+
+function closeAdminPasswordModal() {
+    document.getElementById("adminPasswordModal").style.display = "none";
+    adminPasswordTargetLoginId = null;
+}
+
+async function saveAdminPassword() {
+    const newPwd = document.getElementById("adminNewPassword").value;
+    const confirmPwd = document.getElementById("adminConfirmPassword").value;
+
+    if (!newPwd) return alert("New password is required.");
+    if (newPwd.length < 6) return alert("Password must be at least 6 characters.");
+    if (newPwd !== confirmPwd) return alert("Passwords do not match.");
+
+    if (window.APP_CONFIG?.USE_MOCK) {
+        closeAdminPasswordModal();
+        showSuccessToast("Password updated (mock mode — changes not persisted).");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/admin/users/${adminPasswordTargetLoginId}/password`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify({ password: newPwd })
+        });
+        if (!checkAuthResponse(res)) return;
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `Status: ${res.status}`);
+        closeAdminPasswordModal();
+        showSuccessToast("Password updated successfully.");
+    } catch (err) {
+        alert(`Failed to update password: ${err.message}`);
+    }
+}
+
+function confirmAdminDeleteUser(loginID, isSelf) {
+    if (isSelf) return alert("You cannot delete your own account.");
+    openDeleteModal("USER", loginID, loginID);
+}
+
+async function finalizeAdminUserDelete(loginID) {
+    if (window.APP_CONFIG?.USE_MOCK) {
+        adminUsers = adminUsers.filter(u => u.loginID !== loginID);
+        renderAdminUsers(adminUsers);
+        showSuccessToast("User deleted.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/admin/users/${loginID}`, {
+            method: "DELETE",
+            headers: authHeaders()
+        });
+        if (!checkAuthResponse(res)) return;
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `Status: ${res.status}`);
+        showSuccessToast("User deleted successfully.");
+        await loadAdminUsers();
+    } catch (err) {
+        alert(`Failed to delete user: ${err.message}`);
     }
 }

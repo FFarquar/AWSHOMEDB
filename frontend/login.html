@@ -98,6 +98,7 @@
                 localStorage.setItem('authToken', 'mock-token-abc-123');
                 localStorage.setItem('token', 'mock-token-abc-123');
                 localStorage.setItem('userRole', matchedUser.role); // 👈 FIXED: Saves mock user level
+                localStorage.setItem('userLoginID', matchedUser.loginID);
 
                 window.location.href = 'containers.html';
                 return;
@@ -129,7 +130,8 @@
             
             // 🚀 FIXED FOR PRODUCTION: Extracts and saves the live role from login.mjs
             localStorage.setItem('userRole', data.role || 'USER');
-            
+            localStorage.setItem('userLoginID', username);
+
             window.location.href = 'containers.html';
 
         } catch (err) {

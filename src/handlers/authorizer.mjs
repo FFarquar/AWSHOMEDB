@@ -106,23 +106,23 @@ export const handler = async (event) => {
     // If validation fails, return an explicit IAM "Deny" policy
     if (!payload) {
       console.log("❌ AUTH FAILED");
-      return generatePolicy('user', 'Deny', event.methodArn || '*');
+      return generatePolicy('user', 'UNKNOWN', 'Deny', event.methodArn || '*');
     }
 
     // console.log("✅ AUTH SUCCESS");
     // return generatePolicy(payload.loginID, 'Allow', event.methodArn || '*');
 
     console.log("✅ AUTH SUCCESS - ALLOWING ACCESS");
-    return generatePolicy(payload.loginID, 'Allow', event.methodArn);    
+    return generatePolicy(payload.loginID, payload.role || 'USER', 'Allow', event.methodArn);
 
   } catch (error) {
     console.error("💥 AUTH ERROR:", error.message);
-    return generatePolicy('user', 'Deny', '*');
+    return generatePolicy('user', 'UNKNOWN', 'Deny', '*');
   }
 };
 
 // Helper function to build a flawless Format 1.0 IAM Policy
-function generatePolicy(principalId, effect, resource) {
+function generatePolicy(principalId, role, effect, resource) {
   return {
     principalId: principalId,
     policyDocument: {
@@ -137,7 +137,7 @@ function generatePolicy(principalId, effect, resource) {
     },
     context: {
       loginID: principalId,
-      role: 'ADMIN' // Simple context assignment
+      role: role
     }
   };
 }
