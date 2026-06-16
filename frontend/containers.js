@@ -729,7 +729,7 @@
                 <a href="${att.url}" target="_blank" style="color: #0073bb; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%;">
                     📎 ${att.name || `File ${idx + 1}`}
                 </a>
-                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; font-weight:bold;">Remove</button>
+                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:4px 10px; font-size:14px; cursor:pointer; font-weight:bold;">Remove</button>
             </li>
         `).join('');
     }
@@ -741,10 +741,10 @@
         list.innerHTML = "";
         currentItemAttachments.forEach((a, i) => {
             const li = document.createElement("li");
-            li.style.cssText = "display:flex; justify-content:space-between; margin-bottom:4px;";
+            li.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;";
             li.innerHTML = `
                 <a href="${a.s3Url}" target="_blank">${a.label}</a>
-                <button type="button" onclick="removeAttachmentFromState(${i})" style="min-height:20px; height:20px; padding:0 6px; background:red; color:white; font-size:11px;">X</button>
+                <button type="button" onclick="removeAttachmentFromState(${i})" style="padding:4px 10px; background:red; color:white; font-size:14px; border:none; border-radius:3px; cursor:pointer;">X</button>
             `;
             list.appendChild(li);
         });
@@ -764,7 +764,7 @@
             const safeUrl = url.replace(/'/g, "\\'");
             return `<div class="note-card" style="display:flex; justify-content:space-between; align-items:center;">
                 <a href="#" class="note-att-link" onclick="confirmDownload(event, '${safeUrl}', '${safeName}'); return false;" style="color:#0073bb; text-decoration:none; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">📎 ${name}</a>
-                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:20px; height:20px; min-width:20px; min-height:20px; max-width:20px; max-height:20px; font-size:14px; line-height:20px; cursor:pointer; font-weight:bold; flex-shrink:0; align-self:center; text-align:center; padding:0; overflow:hidden; box-sizing:border-box;">×</button>
+                <button type="button" onclick="removeAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:50%; width:32px; height:32px; min-width:32px; min-height:32px; font-size:16px; line-height:32px; cursor:pointer; font-weight:bold; flex-shrink:0; align-self:center; text-align:center; padding:0; box-sizing:border-box;">×</button>
             </div>`;
         }).join("");
     }
@@ -1368,9 +1368,9 @@ function renderNoteAttachmentList() {
     }
 
     list.innerHTML = currentNoteAttachments.map((att, idx) => `
-        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:3px 6px; border-radius:3px; border:1px solid #eee;">
-            <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
-            <button type="button" onclick="removeNoteAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:1px 5px; font-size:11px; cursor:pointer; font-weight:bold;">X</button>
+        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:6px 8px; border-radius:3px; border:1px solid #eee;">
+            <span style="font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
+            <button type="button" onclick="removeNoteAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:4px 10px; font-size:14px; cursor:pointer; font-weight:bold;">X</button>
         </li>
     `).join("");
 }
@@ -1621,7 +1621,7 @@ function renderPartsSection() {
         return `
             <div class="note-card" onclick="openEditPart('${part.partId}')">
                 <div class="note-date">${part.name || "Unnamed Part"}</div>
-                ${meta ? `<div class="note-desc" style="font-size:12px; color:#555;">${meta}</div>` : ""}
+                ${meta ? `<div class="note-desc" style="font-size:14px; color:#555;">${meta}</div>` : ""}
                 ${attachLinks ? `<div class="note-links">${attachLinks}</div>` : ""}
             </div>`;
     }).join("");
@@ -1685,9 +1685,9 @@ function renderPartAttachmentList() {
     }
 
     list.innerHTML = currentPartAttachments.map((att, idx) => `
-        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:3px 6px; border-radius:3px; border:1px solid #eee;">
-            <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
-            <button type="button" onclick="removePartAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:1px 5px; font-size:11px; cursor:pointer; font-weight:bold;">X</button>
+        <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#fff; padding:6px 8px; border-radius:3px; border:1px solid #eee;">
+            <span style="font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72%;">📎 ${att.filename || att.label || `File ${idx + 1}`}</span>
+            <button type="button" onclick="removePartAttachmentFromState(${idx})" style="background:#ff4d4d; color:white; border:none; border-radius:3px; padding:4px 10px; font-size:14px; cursor:pointer; font-weight:bold;">X</button>
         </li>
     `).join("");
 }

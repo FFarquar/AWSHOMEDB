@@ -230,7 +230,12 @@
     @media (max-width: 1024px) {
 
         body {
-            font-size: 15px;
+            font-size: 16px;
+        }
+
+        /* Force info card to single column so it never overflows the viewport */
+        .info-card-grid {
+            grid-template-columns: 1fr !important;
         }
 
         header {
