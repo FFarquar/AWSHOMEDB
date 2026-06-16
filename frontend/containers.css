@@ -150,6 +150,10 @@
         margin-top: 14px;
     }
 
+    #btnEditContainer {
+        margin-left: auto;
+    }
+
     .info-card {
         background: white;
         padding: 16px;
@@ -213,26 +217,28 @@
     }
 
     /* ============================================================
-       MOBILE  —  portrait phones, landscape phones, small tablets
-       max-width: 1024px covers all phones in both orientations
+       MOBILE  —  phones and small tablets (landscape and portrait)
+       Note 20 Ultra = 412px CSS wide, S23+ = 393px CSS wide.
+       High-DPI phones already scale up physical pixels via DPR,
+       so CSS font sizes here should match normal desktop values.
        ============================================================ */
     @media (max-width: 1024px) {
 
         body {
-            font-size: 22px;
+            font-size: 15px;
         }
 
         header {
-            font-size: 20px;
+            font-size: 15px;
             padding: 16px;
         }
 
         #versionBadge {
-            font-size: 16px;
+            font-size: 12px;
         }
 
-        h2 { font-size: 26px; }
-        h3 { font-size: 24px; }
+        h2 { font-size: 20px; }
+        h3 { font-size: 18px; }
 
         /* --- Card transformation ---
            Must set display:block all the way from table down to td,
@@ -266,8 +272,8 @@
         /* Each data cell stacks: grey label on line 1, value on line 2 */
         table tbody td {
             display: block !important;
-            padding: 18px 20px !important;
-            font-size: 26px !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
             border-bottom: 1px solid #f0f0f0;
             white-space: normal !important;
             text-align: left !important;
@@ -280,20 +286,20 @@
         table tbody td::before {
             display: block;
             content: attr(data-label);
-            font-size: 18px !important;
+            font-size: 11px !important;
             font-weight: 600;
             color: #999;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             text-transform: none;
         }
 
         /* Card title row */
         table tbody td.td-name {
-            font-size: 28px !important;
+            font-size: 16px !important;
             font-weight: 700;
             background: #fafafa;
             border-bottom: 2px solid #eee !important;
-            padding: 20px !important;
+            padding: 14px 16px !important;
         }
 
         table tbody td.td-name::before {
@@ -304,8 +310,8 @@
         table tbody td.td-actions {
             display: flex !important;
             justify-content: flex-end;
-            gap: 12px;
-            padding: 14px 20px !important;
+            gap: 10px;
+            padding: 10px 16px !important;
         }
 
         table tbody td.td-actions::before {
@@ -313,10 +319,10 @@
         }
 
         table tbody td.td-actions button {
-            min-height: 54px !important;
+            min-height: 44px !important;
             height: auto !important;
-            font-size: 20px !important;
-            padding: 12px 28px !important;
+            font-size: 14px !important;
+            padding: 8px 18px !important;
         }
 
         /* --- Toolbar --- */
@@ -326,8 +332,23 @@
 
         .toolbar button {
             width: 100%;
-            min-height: 58px;
-            font-size: 22px;
+            min-height: 44px;
+            font-size: 15px;
+        }
+
+        /* Items panel toolbar scrolls horizontally instead of stacking */
+        #itemsPanelView .toolbar {
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+        }
+
+        #itemsPanelView .toolbar button {
+            width: auto;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         /* --- Modal as bottom sheet --- */
@@ -345,19 +366,19 @@
 
         /* --- Form --- */
         label {
-            font-size: 20px;
+            font-size: 14px;
         }
 
         input,
         select,
         textarea {
-            font-size: 20px;
-            padding: 16px 14px;
+            font-size: 16px;
+            padding: 12px 14px;
         }
 
         button {
-            font-size: 20px;
-            min-height: 58px;
+            font-size: 15px;
+            min-height: 44px;
         }
 
         .actions {
@@ -371,95 +392,91 @@
 
         /* --- Info card --- */
         .info-card {
-            font-size: 26px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* --- Items table: single-line rows (name + date only) --- */
+        #itemsTableBody tr {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            padding: 0 !important;
+            margin-bottom: 8px !important;
+            border-radius: 10px !important;
+        }
+
+        #itemsTableBody td {
+            display: none !important;
+        }
+
+        #itemsTableBody td.td-name {
+            display: flex !important;
+            flex: 1;
+            padding: 12px 14px !important;
+            border-bottom: none !important;
+            font-size: 15px !important;
+            background: transparent;
+        }
+
+        #itemsTableBody td.td-name::before {
+            display: none !important;
+        }
+
+        #itemsTableBody td[data-label="Purchased"] {
+            display: flex !important;
+            flex-shrink: 0;
+            padding: 12px 14px !important;
+            border-bottom: none !important;
+            font-size: 13px !important;
+            color: #888;
+        }
+
+        #itemsTableBody td[data-label="Purchased"]::before {
+            display: none !important;
         }
 
         /* --- Note cards --- */
         .note-card {
-            padding: 16px 18px;
+            padding: 12px 14px;
         }
 
         .note-date {
-            font-size: 18px;
+            font-size: 12px;
         }
 
         .note-desc {
-            font-size: 22px;
+            font-size: 14px;
         }
 
         .note-att-link {
-            font-size: 18px;
+            font-size: 12px;
         }
 
         .attachment-list {
-            font-size: 20px;
+            font-size: 13px;
         }
     }
 
     /* ============================================================
-       PORTRAIT PHONES  —  25% larger than landscape sizes above
-       orientation: portrait targets only upright phone usage
+       PORTRAIT PHONES  —  slightly taller touch targets only.
+       Both Note 20 Ultra (412px) and S23+ (393px) land here.
+       Font sizes stay the same as landscape — DPR handles density.
        ============================================================ */
-    @media (max-width: 1024px) and (orientation: portrait) {
+    @media (max-width: 480px) and (orientation: portrait) {
 
-        body { font-size: 34px; }
-        header { font-size: 30px; }
-        #versionBadge { font-size: 24px; }
-        h2 { font-size: 40px; }
-        h3 { font-size: 36px; }
-
-        table tbody td {
-            font-size: 40px !important;
-            padding: 24px 20px !important;
-        }
-
-        table tbody td::before {
-            font-size: 28px !important;
-            margin-bottom: 8px;
-        }
-
-        table tbody td.td-name {
-            font-size: 42px !important;
-            padding: 26px 20px !important;
-        }
-
-        table tbody td.td-actions {
-            padding: 20px !important;
-        }
+        h2 { font-size: 22px; }
+        h3 { font-size: 20px; }
 
         table tbody td.td-actions button {
-            font-size: 30px !important;
-            min-height: 72px !important;
-            padding: 16px 30px !important;
+            min-height: 48px !important;
         }
 
         .toolbar button {
-            font-size: 34px;
-            min-height: 88px;
-        }
-
-        label { font-size: 30px; }
-
-        input,
-        select,
-        textarea {
-            font-size: 26px;
-            padding: 22px 14px;
+            min-height: 48px;
         }
 
         button {
-            font-size: 30px;
-            min-height: 82px;
-        }
-
-        .info-card { font-size: 40px; }
-
-        .note-card { padding: 24px 26px; }
-        .note-date { font-size: 28px; }
-        .note-desc { font-size: 34px; }
-        .note-att-link { font-size: 28px; }
-
-        .attachment-list {
-            font-size: 30px;
+            min-height: 48px;
         }
     }

@@ -43,7 +43,6 @@
                             <th>Purchase Date</th>
                             <th>Price</th>
                             <th>Warranty</th>
-                            <th id="thActions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -56,8 +55,10 @@
         <!-- ========================================== -->
         <div id="itemsPanelView" style="display: none; flex-direction: column; gap: 10px;">
             <div class="toolbar">
-                <button class="btn-secondary" onclick="closeItemsPanel()">⬅️ Back to Containers</button>
+                <button class="btn-secondary" onclick="closeItemsPanel()">⬅️ Back</button>
                 <button class="btn-primary" id="btnNewItem" onclick="openItemCreate()">New Item</button>
+                <button class="btn-primary" id="btnEditContainer" onclick="editCurrentContainer()" style="display:none;">Edit Container</button>
+                <button class="btn-danger" id="btnDeleteContainer" onclick="deleteCurrentContainer()" style="display:none;">Delete Container</button>
             </div>
 
             <div class="info-card">
@@ -70,7 +71,6 @@
                 </div>
             </div>
 
-            <h3 id="itemsTableTitle">Items</h3>
             <div class="table-wrapper">
                 <table>
                     <thead>

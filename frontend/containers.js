@@ -35,6 +35,7 @@
     let editingId = null;       // Tracks primary container PK edits
     let editingItemId = null;   // Tracks child item ID edits
     let activeShortContainerId = null; // Tracks active parent container (short form ID)
+    let activeContainerPK = null;      // Tracks active parent container full PK for edit/delete
 
     const userRole = localStorage.getItem("userRole") || "USER";
     
@@ -47,8 +48,6 @@
         if (!isAdmin) {
             const btnNew = document.getElementById("btnNewContainer");
             if (btnNew) btnNew.style.display = "none";
-            const thActions = document.getElementById("thActions");
-            if (thActions) thActions.style.display = "none";
         }
 
         // 2. Lock down Item actions ONLY if they lack item permissions (e.g. GUEST)
@@ -99,6 +98,11 @@
         const itemsPanel = document.getElementById('itemsPanelView');
         if (itemsPanel && itemsPanel.style.display !== 'none') {
             activeShortContainerId = null;
+            activeContainerPK = null;
+            const btnEdit = document.getElementById("btnEditContainer");
+            const btnDelete = document.getElementById("btnDeleteContainer");
+            if (btnEdit) btnEdit.style.display = "none";
+            if (btnDelete) btnDelete.style.display = "none";
             itemsPanel.style.display = 'none';
             document.getElementById('containersPanelView').style.display = 'block';
             history.pushState({ view: 'app' }, '');
@@ -191,13 +195,6 @@
             const pk = c.PK;
             const shortId = (c.containerId || pk.replace("CONTAINER#", "")).trim().toUpperCase();
 
-            const actionsCell = isAdmin
-                ? `<td class="td-actions">
-                    <button onclick="edit('${pk}')" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Edit</button>
-                    <button onclick="removeItem('${pk}')" class="btn-danger" style="min-height:30px; height:30px; padding:2px 12px; font-size:13px; line-height:1;">Delete</button>
-                </td>`
-                : "";
-
             const row = document.createElement("tr");
             row.style.cursor = "pointer";
 
@@ -206,15 +203,9 @@
                 <td data-label="Purchased">${formatDate(c.purchaseDate)}</td>
                 <td data-label="Price">$${Number(c.purchasePrice || 0).toLocaleString()}</td>
                 <td data-label="Warranty">${formatDate(c.extendedWarrantyFinishDate || c.warrantyFinishDate)}</td>
-                ${actionsCell}
             `;
 
-            row.addEventListener("click", (event) => {
-                if (event.target.tagName === "BUTTON" || (event.target.closest("td") && event.target.closest("td").nextElementSibling === null && isAdmin)) {
-                    return; 
-                }
-                openItems(pk, shortId);
-            });
+            row.addEventListener("click", () => openItems(pk, shortId));
 
             body.appendChild(row);
         });
@@ -243,6 +234,16 @@
 
         document.getElementById("editHint").innerText = pk;
         document.getElementById("modal").style.display = "flex";
+    }
+
+    function editCurrentContainer() {
+        if (!isAdmin || !activeContainerPK) return;
+        edit(activeContainerPK);
+    }
+
+    function deleteCurrentContainer() {
+        if (!isAdmin || !activeContainerPK) return;
+        removeItem(activeContainerPK);
     }
 
      async function save() {
@@ -370,8 +371,16 @@
     async function openItems(pk, shortId) {
         // ✨ FIXED: Automatically strips the prefix to guarantee clean short string matches ("CONTAINER2")
         const cleanShortId = (shortId || pk || "").replace("CONTAINER#", "");
-        
+
         activeShortContainerId = cleanShortId;
+        activeContainerPK = pk;
+
+        if (isAdmin) {
+            const btnEdit = document.getElementById("btnEditContainer");
+            const btnDelete = document.getElementById("btnDeleteContainer");
+            if (btnEdit) btnEdit.style.display = "inline-block";
+            if (btnDelete) btnDelete.style.display = "inline-block";
+        }
         console.log(`📂 openItems triggered. Sanitized shortId to match items: [${cleanShortId}]`);
 
         // Safely check if the container list cache exists in active memory
@@ -381,7 +390,6 @@
 
         // Render dashboard header card labels with safe fallbacks
         document.getElementById("summaryContainerName").innerText = containerObj ? containerObj.name : cleanShortId;
-        document.getElementById("itemsTableTitle").innerText = "Items for " + (containerObj ? containerObj.name : cleanShortId);
 
         
         document.getElementById("summaryPurchaseDate").innerText = formatDate(containerObj?.purchaseDate) || "N/A";
@@ -398,6 +406,11 @@
 
     function closeItemsPanel() {
         activeShortContainerId = null;
+        activeContainerPK = null;
+        const btnEdit = document.getElementById("btnEditContainer");
+        const btnDelete = document.getElementById("btnDeleteContainer");
+        if (btnEdit) btnEdit.style.display = "none";
+        if (btnDelete) btnDelete.style.display = "none";
         document.getElementById("itemsPanelView").style.display = "none";
         document.getElementById("containersPanelView").style.display = "block";
     }
