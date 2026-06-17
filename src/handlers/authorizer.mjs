@@ -113,7 +113,9 @@ export const handler = async (event) => {
     // return generatePolicy(payload.loginID, 'Allow', event.methodArn || '*');
 
     console.log("✅ AUTH SUCCESS - ALLOWING ACCESS");
-    return generatePolicy(payload.loginID, payload.role || 'USER', 'Allow', event.methodArn);
+    // Use wildcard ARN so the cached policy covers all routes on this stage
+    const arnBase = event.methodArn.split('/').slice(0, 2).join('/');
+    return generatePolicy(payload.loginID, payload.role || 'USER', 'Allow', `${arnBase}/*/*`);
 
   } catch (error) {
     console.error("💥 AUTH ERROR:", error.message);
