@@ -469,6 +469,14 @@ Resources:
       Handler: src/handlers/authorizer.handler
       Runtime: nodejs24.x
 
+  AuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizerFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyServerlessApi}/*"
+
   # =========================
   # DYNAMODB
   # =========================
