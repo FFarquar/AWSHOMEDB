@@ -7,6 +7,7 @@ const TABLE_NAME = process.env.TABLE_NAME;
 
 export const handler = async (event) => {
     console.log("===== ADMIN USERS LIST =====");
+    console.log("DEBUG authContext:", JSON.stringify(event.requestContext?.authorizer));
 
     const authContext = event.requestContext?.authorizer || {};
     if (authContext.role !== 'ADMIN') {
