@@ -9,7 +9,7 @@ export const handler = async (event) => {
     console.log("===== ADMIN USERS LIST =====");
     console.log("DEBUG authContext:", JSON.stringify(event.requestContext?.authorizer));
 
-    const authContext = event.requestContext?.authorizer || {};
+    const authContext = event.requestContext?.authorizer?.lambda || {};
     if (authContext.role !== 'ADMIN') {
         return {
             statusCode: 403,

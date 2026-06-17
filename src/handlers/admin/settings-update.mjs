@@ -8,7 +8,7 @@ const TABLE_NAME = process.env.TABLE_NAME;
 export const handler = async (event) => {
     console.log("===== UPDATE UPLOAD SETTINGS =====");
 
-    const authContext = event.requestContext?.authorizer || {};
+    const authContext = event.requestContext?.authorizer?.lambda || {};
     if (authContext.role !== 'ADMIN') {
         return {
             statusCode: 403,

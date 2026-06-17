@@ -10,7 +10,7 @@ const VALID_ROLES = ['ADMIN', 'USER', 'GUEST'];
 export const handler = async (event) => {
     console.log("===== ADMIN USERS UPDATE =====");
 
-    const authContext = event.requestContext?.authorizer || {};
+    const authContext = event.requestContext?.authorizer?.lambda || {};
     if (authContext.role !== 'ADMIN') {
         return {
             statusCode: 403,
