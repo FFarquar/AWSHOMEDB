@@ -294,6 +294,33 @@
 
 
     <!-- ========================================== -->
+    <!-- CUSTOM INFO POPUP MODAL                   -->
+    <!-- ========================================== -->
+    <div class="modal" id="infoPopupModal">
+        <div class="modal-content" style="max-width: 360px; text-align: center;">
+            <h3 style="margin-top: 0; color: #d97706;">Notice</h3>
+            <p id="infoPopupMessage" style="font-size: 14px; margin-bottom: 20px;"></p>
+            <div class="actions" style="justify-content: center;">
+                <button class="btn-primary" onclick="closeInfoPopup()" style="min-width: 100px;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CUSTOM CONFIRM POPUP MODAL                -->
+    <!-- ========================================== -->
+    <div class="modal" id="confirmPopupModal">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <h3 id="confirmPopupTitle" style="margin-top: 0; color: #2563eb;">Confirm</h3>
+            <p id="confirmPopupMessage" style="font-size: 14px; margin-bottom: 20px;"></p>
+            <div class="actions" style="justify-content: center;">
+                <button id="btnConfirmPopupYes" class="btn-primary" style="flex: 1;">Yes</button>
+                <button id="btnConfirmPopupNo" class="btn-secondary" style="flex: 1;">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
     <!-- ADMIN PANEL: USER MANAGEMENT              -->
     <!-- ========================================== -->
     <div class="modal" id="adminModal">

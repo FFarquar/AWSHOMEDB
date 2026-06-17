@@ -250,7 +250,7 @@
     }
 
      async function save() {
-        if (!isAdmin) return alert("Unauthorized action.");
+        if (!isAdmin) { showInfoPopup("Unauthorized action."); return; }
 
         const name = document.getElementById("name").value.trim();
         const photoLocation = document.getElementById("photoLocation").value.trim();
@@ -259,7 +259,7 @@
         const extendedWarrantyFinishDate = document.getElementById("extendedWarrantyFinishDate").value;
         const purchasePrice = Number(document.getElementById("purchasePrice").value) || 0;
 
-        if (!name) return alert("Name required");
+        if (!name) { showInfoPopup("Name required"); return; }
 
         const id = "CONTAINER" + Date.now();
         const pk = editingId || `CONTAINER#${id}`;
@@ -665,7 +665,7 @@
     function addAttachmentToState() {
         const lbl = document.getElementById("attLabel").value.trim();
         const url = document.getElementById("attUrl").value.trim();
-        if (!lbl || !url) return alert("Label and absolute path URL strings required.");
+        if (!lbl || !url) { showInfoPopup("Label and absolute path URL strings required."); return; }
 
         currentItemAttachments.push({
             attachmentId: "ATT#" + Date.now(),
@@ -818,9 +818,9 @@
     }
 
         async function saveItem() {
-        if (!canManageItems) return alert("Action restricted."); 
+        if (!canManageItems) { showInfoPopup("Action restricted."); return; }
         const nameVal = document.getElementById("itemName").value.trim();
-        if (!nameVal) return alert("Item Name is mandatory.");
+        if (!nameVal) { showInfoPopup("Item Name is mandatory."); return; }
 
         // Clean file properties structure ensuring compatibility across both modal variations
         const cleanedAttachments = currentItemAttachments.map(att => ({
@@ -995,7 +995,7 @@
 
     async function confirmDownload(event, url, label) {
         event.preventDefault();
-        if (!confirm(`Download "${label}"?`)) return;
+        if (!await showConfirmPopup(`Download "${label}"?`, "Download")) return;
 
         let downloadUrl = url;
 
@@ -1129,12 +1129,39 @@ function showSuccessToast(message) {
     }, 2000);
 }
 
+function showInfoPopup(message) {
+    document.getElementById("infoPopupMessage").textContent = message;
+    document.getElementById("infoPopupModal").style.display = "flex";
+}
+
+function closeInfoPopup() {
+    document.getElementById("infoPopupModal").style.display = "none";
+}
+
+function showConfirmPopup(message, title) {
+    return new Promise((resolve) => {
+        document.getElementById("confirmPopupMessage").textContent = message;
+        document.getElementById("confirmPopupTitle").textContent = title || "Confirm";
+        const modal = document.getElementById("confirmPopupModal");
+        modal.style.display = "flex";
+        const btnYes = document.getElementById("btnConfirmPopupYes");
+        const btnNo = document.getElementById("btnConfirmPopupNo");
+        function cleanup() {
+            modal.style.display = "none";
+            btnYes.onclick = null;
+            btnNo.onclick = null;
+        }
+        btnYes.onclick = () => { cleanup(); resolve(true); };
+        btnNo.onclick = () => { cleanup(); resolve(false); };
+    });
+}
+
 async function handleAttachmentUpload() {
     const fileInput = document.getElementById("itemFilePicker");
     const progressStatus = document.getElementById("uploadProgressBar");
 
     if (!fileInput || !fileInput.files.length) {
-        return alert("Please select a file first."); // Kept as alert since it blocks an error state
+        showInfoPopup("Please select a file first."); return;
     }
     
     const file = fileInput.files[0];
@@ -1385,7 +1412,7 @@ async function handleNoteAttachmentUpload() {
     const progressStatus = document.getElementById("noteUploadProgress");
 
     if (!fileInput || !fileInput.files.length) {
-        alert("Please select a file first.");
+        showInfoPopup("Please select a file first.");
         return false;
     }
 
@@ -1470,7 +1497,7 @@ async function handleNoteAttachmentUpload() {
 
 async function saveNote() {
     const description = document.getElementById("noteDescription").value.trim();
-    if (!description) return alert("Description is required.");
+    if (!description) { showInfoPopup("Description is required."); return; }
 
     const noteFilePicker = document.getElementById("noteFilePicker");
     if (noteFilePicker && noteFilePicker.files.length > 0) {
@@ -1702,7 +1729,7 @@ async function handlePartAttachmentUpload() {
     const progressStatus = document.getElementById("partUploadProgress");
 
     if (!fileInput || !fileInput.files.length) {
-        alert("Please select a file first.");
+        showInfoPopup("Please select a file first.");
         return false;
     }
 
@@ -1787,7 +1814,7 @@ async function handlePartAttachmentUpload() {
 
 async function savePart() {
     const name = document.getElementById("partName").value.trim();
-    if (!name) return alert("Name is required.");
+    if (!name) { showInfoPopup("Name is required."); return; }
 
     const partFilePicker = document.getElementById("partFilePicker");
     if (partFilePicker && partFilePicker.files.length > 0) {
@@ -2033,13 +2060,13 @@ async function saveAdminUser() {
         const loginID = document.getElementById("adminLoginId").value.trim();
         const password = document.getElementById("adminPassword").value;
         const confirmPassword = document.getElementById("adminPasswordConfirm").value;
-        if (!loginID) return alert("Login ID is required.");
-        if (!password) return alert("Password is required.");
-        if (password.length < 6) return alert("Password must be at least 6 characters.");
-        if (password !== confirmPassword) return alert("Passwords do not match.");
+        if (!loginID) { showInfoPopup("Login ID is required."); return; }
+        if (!password) { showInfoPopup("Password is required."); return; }
+        if (password.length < 6) { showInfoPopup("Password must be at least 6 characters."); return; }
+        if (password !== confirmPassword) { showInfoPopup("Passwords do not match."); return; }
 
         if (window.APP_CONFIG?.USE_MOCK) {
-            if (adminUsers.some(u => u.loginID === loginID)) return alert("A user with this Login ID already exists.");
+            if (adminUsers.some(u => u.loginID === loginID)) { showInfoPopup("A user with this Login ID already exists."); return; }
             adminUsers.push({ loginID, role, active });
             closeAdminUserForm();
             renderAdminUsers(adminUsers);
@@ -2082,9 +2109,9 @@ async function saveAdminPassword() {
     const newPwd = document.getElementById("adminNewPassword").value;
     const confirmPwd = document.getElementById("adminConfirmPassword").value;
 
-    if (!newPwd) return alert("New password is required.");
-    if (newPwd.length < 6) return alert("Password must be at least 6 characters.");
-    if (newPwd !== confirmPwd) return alert("Passwords do not match.");
+    if (!newPwd) { showInfoPopup("New password is required."); return; }
+    if (newPwd.length < 6) { showInfoPopup("Password must be at least 6 characters."); return; }
+    if (newPwd !== confirmPwd) { showInfoPopup("Passwords do not match."); return; }
 
     if (window.APP_CONFIG?.USE_MOCK) {
         closeAdminPasswordModal();
@@ -2109,7 +2136,7 @@ async function saveAdminPassword() {
 }
 
 function confirmAdminDeleteUser(loginID, isSelf) {
-    if (isSelf) return alert("You cannot delete your own account.");
+    if (isSelf) { showInfoPopup("You cannot delete your own account."); return; }
     openDeleteModal("USER", loginID, loginID);
 }
 
@@ -2183,7 +2210,7 @@ async function saveAdminSettings() {
     const compressionSelect = document.getElementById("adminImageCompressionEnabled");
 
     const pdfSizeLimitMB = Number(pdfInput?.value);
-    if (!pdfSizeLimitMB || pdfSizeLimitMB <= 0) return alert("PDF size limit must be a positive number.");
+    if (!pdfSizeLimitMB || pdfSizeLimitMB <= 0) { showInfoPopup("PDF size limit must be a positive number."); return; }
 
     const imageCompressionEnabled = compressionSelect?.value === "true";
     const payload = { pdfSizeLimitMB, imageCompressionEnabled };
@@ -2276,8 +2303,9 @@ async function checkAndPrepareFile(file, progressEl) {
         const limitBytes = (uploadSettings.pdfSizeLimitMB || 5) * 1024 * 1024;
         if (file.size > limitBytes) {
             const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-            const proceed = window.confirm(
-                `"${file.name}" is ${sizeMB} MB, which exceeds the ${uploadSettings.pdfSizeLimitMB} MB PDF limit.\n\nUpload anyway?`
+            const proceed = await showConfirmPopup(
+                `"${file.name}" is ${sizeMB} MB, which exceeds the ${uploadSettings.pdfSizeLimitMB} MB PDF limit. Upload anyway?`,
+                "File Size Warning"
             );
             if (!proceed) return null;
         }
