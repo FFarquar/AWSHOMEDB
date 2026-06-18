@@ -76,7 +76,9 @@ jobs:
           echo "✅ API URL: $API_URL_CLEAN"
 
       - name: Generate Version File
-        run: echo '{ "build": ${{ github.run_number }} }' > frontend/version.json
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+        run: echo "{ \"build\": $BUILD_NUM }" > frontend/version.json
 
       - name: Deploy to GitHub Pages (Staging)
         uses: peaceiris/actions-gh-pages@v4
@@ -144,7 +146,9 @@ jobs:
           echo "✅ API URL: $API_URL_CLEAN"
 
       - name: Generate Version File
-        run: echo '{ "build": ${{ github.run_number }} }' > frontend/version.json
+        env:
+          BUILD_NUM: ${{ github.run_number }}
+        run: echo "{ \"build\": $BUILD_NUM }" > frontend/version.json
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
