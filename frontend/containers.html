@@ -17,7 +17,7 @@
 
     <header>
         <div style="display:flex; align-items:center; gap:10px;">
-            AWS Home DB - Dashboard
+            <span id="headerTitle">AWS Home DB - Dashboard</span>
             <span id="envBadge"></span>
         </div>
         <div style="display:flex; align-items:center; gap:14px;">
@@ -361,6 +361,13 @@
                     <option value="true">Enabled (target under 1 MB)</option>
                     <option value="false">Disabled</option>
                 </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <label style="min-width:180px; font-size:14px; font-weight:500;">Show Container Buttons</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="adminShowContainerButtons" checked>
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
             <div style="margin-bottom:4px;">
                 <button class="btn-primary" onclick="saveAdminSettings()" style="font-size:14px; min-height:36px; padding:6px 14px;">Save Settings</button>
