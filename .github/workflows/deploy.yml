@@ -71,13 +71,13 @@ jobs:
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN', ENVIRONMENT: 'STAGING' };" > frontend/config.js
           echo "✅ API URL: $API_URL_CLEAN"
 
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages (Staging)
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: './frontend'
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+          personal_token: ${{ secrets.GH_PAT }}
+          external_repository: FFarquar/AWSHomeDB-staging
+          publish_branch: gh-pages
+          publish_dir: ./frontend
 
 
   deploy-production:
