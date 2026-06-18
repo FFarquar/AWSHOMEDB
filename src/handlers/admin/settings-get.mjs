@@ -5,7 +5,7 @@ const client = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME;
 
-const DEFAULTS = { pdfSizeLimitMB: 5, imageCompressionEnabled: true };
+const DEFAULTS = { pdfSizeLimitMB: 5, imageCompressionEnabled: true, showContainerButtons: true };
 
 export const handler = async (event) => {
     console.log("===== GET UPLOAD SETTINGS =====");
@@ -22,7 +22,8 @@ export const handler = async (event) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 pdfSizeLimitMB: item.pdfSizeLimitMB ?? DEFAULTS.pdfSizeLimitMB,
-                imageCompressionEnabled: item.imageCompressionEnabled ?? DEFAULTS.imageCompressionEnabled
+                imageCompressionEnabled: item.imageCompressionEnabled ?? DEFAULTS.imageCompressionEnabled,
+                showContainerButtons: item.showContainerButtons ?? DEFAULTS.showContainerButtons
             })
         };
     } catch (err) {

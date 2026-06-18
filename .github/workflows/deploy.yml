@@ -68,7 +68,7 @@ jobs:
 
           API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
 
-          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN', ENVIRONMENT: 'STAGING' };" > frontend/config.js
           echo "✅ API URL: $API_URL_CLEAN"
 
       - name: Upload Pages Artifact
@@ -129,7 +129,7 @@ jobs:
 
           API_URL_CLEAN=$(echo "$API_URL" | awk '{print $1}' | sed 's/\/$//')
 
-          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN' };" > frontend/config.js
+          echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN', ENVIRONMENT: 'PRODUCTION' };" > frontend/config.js
           echo "✅ API URL: $API_URL_CLEAN"
 
       - name: Upload Pages Artifact

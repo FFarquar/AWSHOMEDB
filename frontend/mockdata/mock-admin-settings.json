@@ -1,4 +1,5 @@
 {
   "pdfSizeLimitMB": 5,
-  "imageCompressionEnabled": true
+  "imageCompressionEnabled": true,
+  "showContainerButtons": true
 }

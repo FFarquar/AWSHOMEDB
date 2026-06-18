@@ -30,7 +30,7 @@
     let editingPartId = null;        // partId of the part being edited (null = adding new)
     let currentPartAttachments = []; // Attachments staged for the part form
 
-    let uploadSettings = { pdfSizeLimitMB: 5, imageCompressionEnabled: true };
+    let uploadSettings = { pdfSizeLimitMB: 5, imageCompressionEnabled: true, showContainerButtons: true };
 
     let editingAttachmentIdx = null; // Index in currentItemAttachments being viewed/deleted
 
@@ -72,6 +72,13 @@
                 if (badge && v.build) badge.textContent = `build #${v.build}`;
             })
             .catch(() => {});
+
+        // 5. Display environment name in header title
+        const env = window.APP_CONFIG?.ENVIRONMENT;
+        if (env) {
+            const title = document.getElementById("headerTitle");
+            if (title) title.textContent = `AWS Home DB - Dashboard (${env})`;
+        }
 
         loadContainers();
         loadCategories();
@@ -378,7 +385,7 @@
         activeShortContainerId = cleanShortId;
         activeContainerPK = pk;
 
-        if (isAdmin) {
+        if (isAdmin && uploadSettings.showContainerButtons !== false) {
             const btnEdit = document.getElementById("btnEditContainer");
             const btnDelete = document.getElementById("btnDeleteContainer");
             if (btnEdit) btnEdit.style.display = "inline-block";
@@ -2179,14 +2186,30 @@ async function fetchUploadSettings() {
             data = await res.json();
         }
         uploadSettings = { ...uploadSettings, ...data };
+        applyContainerButtonVisibility();
     } catch (err) {
         console.warn("Could not load upload settings, using defaults.");
+    }
+}
+
+function applyContainerButtonVisibility() {
+    const show = uploadSettings.showContainerButtons !== false;
+    const btnNew = document.getElementById("btnNewContainer");
+    if (btnNew) btnNew.style.display = (isAdmin && show) ? "" : "none";
+
+    const itemsPanel = document.getElementById("itemsPanelView");
+    if (itemsPanel && itemsPanel.style.display !== "none" && isAdmin) {
+        const btnEdit = document.getElementById("btnEditContainer");
+        const btnDelete = document.getElementById("btnDeleteContainer");
+        if (btnEdit) btnEdit.style.display = show ? "inline-block" : "none";
+        if (btnDelete) btnDelete.style.display = show ? "inline-block" : "none";
     }
 }
 
 async function loadAdminSettings() {
     const pdfInput = document.getElementById("adminPdfSizeLimit");
     const compressionSelect = document.getElementById("adminImageCompressionEnabled");
+    const containerBtnsToggle = document.getElementById("adminShowContainerButtons");
     if (!pdfInput || !compressionSelect) return;
 
     try {
@@ -2200,6 +2223,7 @@ async function loadAdminSettings() {
         }
         pdfInput.value = data.pdfSizeLimitMB ?? 5;
         compressionSelect.value = data.imageCompressionEnabled !== false ? "true" : "false";
+        if (containerBtnsToggle) containerBtnsToggle.checked = data.showContainerButtons !== false;
     } catch (err) {
         console.error("Failed to load upload settings:", err);
     }
@@ -2208,15 +2232,18 @@ async function loadAdminSettings() {
 async function saveAdminSettings() {
     const pdfInput = document.getElementById("adminPdfSizeLimit");
     const compressionSelect = document.getElementById("adminImageCompressionEnabled");
+    const containerBtnsToggle = document.getElementById("adminShowContainerButtons");
 
     const pdfSizeLimitMB = Number(pdfInput?.value);
     if (!pdfSizeLimitMB || pdfSizeLimitMB <= 0) { showInfoPopup("PDF size limit must be a positive number."); return; }
 
     const imageCompressionEnabled = compressionSelect?.value === "true";
-    const payload = { pdfSizeLimitMB, imageCompressionEnabled };
+    const showContainerButtons = containerBtnsToggle ? containerBtnsToggle.checked : true;
+    const payload = { pdfSizeLimitMB, imageCompressionEnabled, showContainerButtons };
 
     if (window.APP_CONFIG?.USE_MOCK) {
         uploadSettings = payload;
+        applyContainerButtonVisibility();
         showSuccessToast("Upload settings saved (mock mode).");
         return;
     }
@@ -2233,6 +2260,7 @@ async function saveAdminSettings() {
             throw new Error(data.message || `Status: ${res.status}`);
         }
         uploadSettings = payload;
+        applyContainerButtonVisibility();
         showSuccessToast("Upload settings saved.");
     } catch (err) {
         alert(`Failed to save settings: ${err.message}`);

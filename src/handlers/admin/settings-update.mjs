@@ -21,6 +21,7 @@ export const handler = async (event) => {
         const body = JSON.parse(event.body || "{}");
         const pdfSizeLimitMB = Number(body.pdfSizeLimitMB);
         const imageCompressionEnabled = body.imageCompressionEnabled === true || body.imageCompressionEnabled === "true";
+        const showContainerButtons = body.showContainerButtons !== false && body.showContainerButtons !== "false";
 
         if (!Number.isFinite(pdfSizeLimitMB) || pdfSizeLimitMB <= 0) {
             return {
@@ -37,14 +38,15 @@ export const handler = async (event) => {
                 SK: "SETTINGS",
                 entityType: "SETTINGS",
                 pdfSizeLimitMB,
-                imageCompressionEnabled
+                imageCompressionEnabled,
+                showContainerButtons
             }
         }));
 
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pdfSizeLimitMB, imageCompressionEnabled })
+            body: JSON.stringify({ pdfSizeLimitMB, imageCompressionEnabled, showContainerButtons })
         };
     } catch (err) {
         console.error(err);
