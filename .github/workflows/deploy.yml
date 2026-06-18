@@ -75,6 +75,9 @@ jobs:
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN', ENVIRONMENT: 'STAGING' };" > frontend/config.js
           echo "✅ API URL: $API_URL_CLEAN"
 
+      - name: Generate Version File
+        run: echo '{ "build": ${{ github.run_number }} }' > frontend/version.json
+
       - name: Deploy to GitHub Pages (Staging)
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -139,6 +142,9 @@ jobs:
 
           echo "window.APP_CONFIG = { API_BASE_URL: '$API_URL_CLEAN', ENVIRONMENT: 'PRODUCTION' };" > frontend/config.js
           echo "✅ API URL: $API_URL_CLEAN"
+
+      - name: Generate Version File
+        run: echo '{ "build": ${{ github.run_number }} }' > frontend/version.json
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

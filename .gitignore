@@ -1,6 +1,9 @@
 # Node dependencies
 node_modules/
 
+# Generated at deploy time by CI
+frontend/version.json
+
 # SAM build artifacts
 .aws-sam/
 
