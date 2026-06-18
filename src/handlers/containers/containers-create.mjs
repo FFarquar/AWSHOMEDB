@@ -41,7 +41,6 @@ export const handler = async (event) => {
       containerId: body.containerId,
       name: body.name,
 
-      photoLocation: body.photoLocation ?? "",
       purchaseDate: body.purchaseDate ?? "",
       purchasePrice: body.purchasePrice ?? 0,
       warrantyFinishDate: body.warrantyFinishDate ?? "",

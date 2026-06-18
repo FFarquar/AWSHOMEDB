@@ -22,17 +22,16 @@ export const handler = async (event) => {
 
     const body = JSON.parse(event.body || "{}");
     
-    const { 
-      name, 
-      photoLocation, 
-      purchaseDate, 
-      warrantyFinishDate, 
-      extendedWarrantyFinishDate, 
-      purchasePrice 
+    const {
+      name,
+      purchaseDate,
+      warrantyFinishDate,
+      extendedWarrantyFinishDate,
+      purchasePrice
     } = body;
 
     // Check that at least one valid field was provided to update
-    if (!name && !photoLocation && !purchaseDate && !warrantyFinishDate && extendedWarrantyFinishDate === undefined && purchasePrice === undefined) {
+    if (!name && !purchaseDate && !warrantyFinishDate && extendedWarrantyFinishDate === undefined && purchasePrice === undefined) {
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json" },
@@ -51,11 +50,6 @@ export const handler = async (event) => {
       expressionAttributeNames["#itemName"] = "itemName"; // Sync for ItemNameIndex GSI
       expressionAttributeValues[":name"] = name;
       expressionAttributeValues[":itemName"] = name;
-    }
-    if (photoLocation !== undefined) {
-      updateExpression += " #photoLocation = :photoLocation,";
-      expressionAttributeNames["#photoLocation"] = "photoLocation";
-      expressionAttributeValues[":photoLocation"] = photoLocation;
     }
     if (purchaseDate !== undefined) {
       updateExpression += " #purchaseDate = :purchaseDate,";
