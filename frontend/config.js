@@ -3,6 +3,6 @@
 window.APP_CONFIG = { API_BASE_URL: "http://localhost:3000",
   ENVIRONMENT: 'LOCAL',
   // 🔥 MASTER SWITCH
-  USE_MOCK: true
+  USE_MOCK: false
  };
 
