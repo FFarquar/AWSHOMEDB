@@ -78,7 +78,8 @@ jobs:
       - name: Generate Version File
         env:
           BUILD_NUM: ${{ github.run_number }}
-        run: echo "{ \"build\": $BUILD_NUM }" > frontend/version.json
+        run: |
+          printf '{ "build": %s }' "$BUILD_NUM" > frontend/version.json
 
       - name: Deploy to GitHub Pages (Staging)
         uses: peaceiris/actions-gh-pages@v4
@@ -148,7 +149,8 @@ jobs:
       - name: Generate Version File
         env:
           BUILD_NUM: ${{ github.run_number }}
-        run: echo "{ \"build\": $BUILD_NUM }" > frontend/version.json
+        run: |
+          printf '{ "build": %s }' "$BUILD_NUM" > frontend/version.json
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
