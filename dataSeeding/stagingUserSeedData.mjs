@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 const client = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(client);
 
-const TABLE_NAME = "AWSHOMEDB-STAGING-Data";
+const TABLE_NAME = "AWSHOMEDB-PROD-Staging";
 
 const items = [
   {
@@ -15,7 +15,7 @@ const items = [
     "loginID": "Dean_P",
     "role": "ADMIN",
     "active": true,
-    "passwordHash" :"$2a$10$41LxGGMMEn5YCk9VvPN/gOlOGxFyDnJfuAhAE/oNmxDPcOMHp3sWG"
+    "passwordHash" :"$2a$10$FXXV8JUy.YhZEQs2V.Wv/O75bxhdRHC2gq3SvCGOAkfZtylDp9xni"
   },
   {
     "PK": "USER#Jenny_P",
@@ -25,18 +25,8 @@ const items = [
     "loginID": "Jenny_P",
     "role": "USER",
     "active": true,
-    "passwordHash" :"$2a$10$41LxGGMMEn5YCk9VvPN/gOlOGxFyDnJfuAhAE/oNmxDPcOMHp3sWG"
-  },
-  {
-    "PK": "USER#Guest",
-    "SK": "PROFILE",
-
-    "entityType": "USER",
-    "loginID": "Guest",
-    "role": "GUEST",
-    "active": true,
-    "passwordHash" :"$2a$10$41LxGGMMEn5YCk9VvPN/gOlOGxFyDnJfuAhAE/oNmxDPcOMHp3sWG"
-  },
+    "passwordHash" :"$2a$10$FXXV8JUy.YhZEQs2V.Wv/O75bxhdRHC2gq3SvCGOAkfZtylDp9xni"
+  }
   
 ];
 
@@ -47,5 +37,5 @@ for (const item of items) {
       Item: item,
     })
   );
-  console.log("Inserted:", item.id);
+  console.log("Inserted:", item.loginID);
 }

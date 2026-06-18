@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 const client = new DynamoDBClient({ region: "ap-southeast-2" });
 const ddb = DynamoDBDocumentClient.from(client);
 
-const TABLE_NAME = "AWSHOMEDB-STAGING-Data";
+const TABLE_NAME = "AWSHOMEDB-PROD-Data";
 
 const items = [
   {
