@@ -32,6 +32,21 @@
 
     let uploadSettings = { pdfSizeLimitMB: 5, imageCompressionEnabled: true, showContainerButtons: true };
 
+    let itemFormDirty = false;
+
+    function updateItemModalButtons() {
+        const saveBtn = document.getElementById("btnSaveItem");
+        if (!saveBtn) return;
+        saveBtn.disabled = !itemFormDirty;
+        saveBtn.style.opacity = itemFormDirty ? "" : "0.45";
+        saveBtn.style.cursor = itemFormDirty ? "" : "not-allowed";
+    }
+
+    function markItemFormDirty() {
+        itemFormDirty = true;
+        updateItemModalButtons();
+    }
+
     let editingAttachmentIdx = null; // Index in currentItemAttachments being viewed/deleted
 
     let editingId = null;       // Tracks primary container PK edits
@@ -79,6 +94,16 @@
         loadContainers();
         loadCategories();
         fetchUploadSettings();
+
+        // Attach dirty-tracking listeners to item form fields
+        ["itemName", "itemCategory", "itemPurchasedFrom", "itemPurchasePrice", "itemPurchaseDate", "itemWarrantyExpiryDate", "itemPhysicalLocation"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", markItemFormDirty);
+                el.addEventListener("change", markItemFormDirty);
+            }
+        });
+        updateItemModalButtons();
 
         history.replaceState({ view: 'app' }, '');
         history.pushState({ view: 'app' }, '');
@@ -174,22 +199,25 @@
  // ==========================================
     // SECTION 1: CONTAINERS LOGIC METHODS
     // ==========================================
-    async function loadContainers() {
+    async function loadContainers(btn = null) {
+        setLoading(btn, true);
         try {
             // ✨ FIXED: Pulls straight from your apiClient file wrapper with zero hardcoded references
             containers = await apiGet("/containers", "mock-containers.json");
-            
+
             if (!Array.isArray(containers)) {
                 console.warn("⚠️ Warning: mock-containers.json data format is missing or invalid.");
                 containers = [];
             }
-            
+
             renderTable();
             loadItemCountsAsync();
         } catch (err) {
             console.error("💥 Failed to read local container mock files:", err);
             containers = [];
             renderTable();
+        } finally {
+            setLoading(btn, false);
         }
     }
 
@@ -210,7 +238,7 @@
                 <td data-label="Purchased">${formatDate(c.purchaseDate)}</td>
                 <td data-label="Price">$${Number(c.purchasePrice || 0).toLocaleString()}</td>
                 <td data-label="Warranty">${formatDate(c.extendedWarrantyFinishDate || c.warrantyFinishDate)}</td>
-                <td data-item-count="${pk.replace('CONTAINER#', '').trim().toUpperCase()}" style="text-align:center; color:#888; font-style:italic;">...</td>
+                <td data-label="Items" data-item-count="${pk.replace('CONTAINER#', '').trim().toUpperCase()}" style="text-align:center; color:#888; font-style:italic;">...</td>
             `;
 
             row.addEventListener("click", () => openItems(pk, shortId));
@@ -284,7 +312,7 @@
         removeItem(activeContainerPK);
     }
 
-     async function save() {
+     async function save(btn = null) {
         if (!isAdmin) { showInfoPopup("Unauthorized action."); return; }
 
         const name = document.getElementById("name").value.trim();
@@ -329,6 +357,7 @@
             return; 
         }
 
+        setLoading(btn, true);
         try {
             if (editingId) {
                 const cleanId = editingId.replace("CONTAINER#", "");
@@ -352,7 +381,9 @@
             closeModal();
             await loadContainers();
         } catch (err) {
-            alert(`Failed network transaction: ${err.message}`);
+            showInfoPopup(`Failed network transaction: ${err.message}`);
+        } finally {
+            setLoading(btn, false);
         }
     }
 
@@ -489,7 +520,7 @@
             await loadContainers();
             showSuccessToast("Container deleted successfully.");
         } catch (error) {
-            alert("Failed to delete the container from the cloud.");
+            showInfoPopup("Failed to delete the container from the cloud.");
         }
     }
 
@@ -713,6 +744,8 @@
         document.getElementById("partsSection").style.display = "none";
         const btnDelete = document.getElementById("btnDeleteItem");
         if (btnDelete) btnDelete.style.display = "none";
+        itemFormDirty = false;
+        updateItemModalButtons();
         document.getElementById("itemModal").style.display = "flex";
     }
 
@@ -796,11 +829,14 @@
         document.getElementById("partsToggle").textContent = "▼";
         document.getElementById("partsAddBtn").style.display = "none";
 
+        itemFormDirty = false;
+        updateItemModalButtons();
         document.getElementById("itemModal").style.display = "flex";
     }
 
     function closeItemModal() {
         document.getElementById("itemModal").style.display = "none";
+        itemFormDirty = false;
         editingItemId = null;
         currentItemNotes = [];
         editingNoteId = null;
@@ -849,7 +885,7 @@
         const att = currentItemAttachments[indexToDrop];
         const attName = att?.name || att?.label || att?.filename || "this attachment";
 
-        if (!confirm(`Are you sure you want to delete "${attName}"? This cannot be undone.`)) return;
+        if (!await showConfirmPopup(`Are you sure you want to delete "${attName}"? This cannot be undone.`, "Delete Attachment")) return;
 
         if (editingItemId && att && att.attachmentId) {
             try {
@@ -869,7 +905,7 @@
                     throw new Error(err.message || `Status ${res.status}`);
                 }
             } catch (error) {
-                alert(`Failed to delete attachment: ${error.message}`);
+                showInfoPopup(`Failed to delete attachment: ${error.message}`);
                 return;
             }
         }
@@ -986,7 +1022,7 @@
         closeAttachmentForm();
     }
 
-        async function saveItem() {
+        async function saveItem(btn = null) {
         if (!canManageItems) { showInfoPopup("Action restricted."); return; }
         const nameVal = document.getElementById("itemName").value.trim();
         if (!nameVal) { showInfoPopup("Item Name is mandatory."); return; }
@@ -1047,6 +1083,7 @@
             return;
         }
 
+        setLoading(btn, true);
         try {
             let path = `${API}/containers/${activeShortContainerId}/items`;
             let method = "POST";
@@ -1074,7 +1111,9 @@
             showSuccessToast('Item saved successfully to the database!');
 
         } catch (error) {
-            alert(`Save lifecycle failed: ${error.message}`);
+            showInfoPopup(`Save lifecycle failed: ${error.message}`);
+        } finally {
+            setLoading(btn, false);
         }
     }
 
@@ -1167,7 +1206,7 @@
             await loadItems();
             showSuccessToast("Item and related data deleted successfully.");
         } catch (err) {
-            alert(`Delete transaction failure: ${err.message}`);
+            showInfoPopup(`Delete transaction failure: ${err.message}`);
         }
     }
 
@@ -1190,7 +1229,7 @@
                 if (!res.ok) throw new Error(`Presign failed: ${res.status}`);
                 ({ downloadUrl } = await res.json());
             } catch (err) {
-                alert(`Could not prepare download: ${err.message}`);
+                showInfoPopup(`Could not prepare download: ${err.message}`);
                 return;
             }
         }
@@ -1277,6 +1316,12 @@
         localStorage.clear();
         window.location.href = "login.html";
     }
+
+function setLoading(btn, isLoading) {
+    if (!btn) return;
+    btn.classList.toggle("btn-loading", isLoading);
+    btn.disabled = isLoading;
+}
 
 // Add this helper function somewhere in your script
 function showSuccessToast(message) {
@@ -1399,6 +1444,7 @@ async function handleAttachmentUpload() {
             url: localMockUrl
         });
         renderAttachmentCards();
+        markItemFormDirty();
         closeAttachmentForm();
         if (progressStatus) progressStatus.style.display = "none";
         fileInput.value = "";
@@ -1445,6 +1491,7 @@ async function handleAttachmentUpload() {
 
             currentItemAttachments.push(stagedAttachment);
             renderAttachmentCards();
+            markItemFormDirty();
             closeAttachmentForm();
             showSuccessToast(`Staged "${displayName}"! Will save with item.`);
 
@@ -1485,7 +1532,7 @@ async function handleAttachmentUpload() {
         }
 
     } catch (err) {
-        alert(`Attachment pipeline error: ${err.message}`); // Left intact to catch critical failures
+        showInfoPopup(`Attachment pipeline error: ${err.message}`);
     } finally {
         setAttachmentUploadLock(false);
         if (progressStatus) progressStatus.style.display = "none";
@@ -1720,7 +1767,7 @@ async function handleNoteAttachmentUpload() {
         }
         return true;
     } catch (err) {
-        alert(`Note attachment error: ${err.message}`);
+        showInfoPopup(`Note attachment error: ${err.message}`);
         return false;
     } finally {
         if (progressStatus) progressStatus.style.display = "none";
@@ -1728,7 +1775,7 @@ async function handleNoteAttachmentUpload() {
     }
 }
 
-async function saveNote() {
+async function saveNote(btn = null) {
     const description = document.getElementById("noteDescription").value.trim();
     if (!description) { showInfoPopup("Description is required."); return; }
 
@@ -1774,6 +1821,7 @@ async function saveNote() {
         return;
     }
 
+    setLoading(btn, true);
     try {
         let path = `${API}/containers/${activeShortContainerId}/items/${editingItemId}/notes`;
         let method = "POST";
@@ -1794,7 +1842,9 @@ async function saveNote() {
         syncNoteCountCell();
         showSuccessToast("Note saved successfully!");
     } catch (err) {
-        alert(`Failed to save note: ${err.message}`);
+        showInfoPopup(`Failed to save note: ${err.message}`);
+    } finally {
+        setLoading(btn, false);
     }
 }
 
@@ -1839,7 +1889,7 @@ async function finalizeNoteDelete(noteId) {
         syncNoteCountCell();
         showSuccessToast("Note deleted successfully.");
     } catch (err) {
-        alert(`Failed to delete note: ${err.message}`);
+        showInfoPopup(`Failed to delete note: ${err.message}`);
     }
 }
 
@@ -2070,7 +2120,7 @@ async function handlePartAttachmentUpload() {
         }
         return true;
     } catch (err) {
-        alert(`Part attachment error: ${err.message}`);
+        showInfoPopup(`Part attachment error: ${err.message}`);
         return false;
     } finally {
         if (progressStatus) progressStatus.style.display = "none";
@@ -2078,7 +2128,7 @@ async function handlePartAttachmentUpload() {
     }
 }
 
-async function savePart() {
+async function savePart(btn = null) {
     const name = document.getElementById("partName").value.trim();
     if (!name) { showInfoPopup("Name is required."); return; }
 
@@ -2129,6 +2179,7 @@ async function savePart() {
         return;
     }
 
+    setLoading(btn, true);
     try {
         let path = `${API}/containers/${activeShortContainerId}/items/${editingItemId}/parts`;
         let method = "POST";
@@ -2149,7 +2200,9 @@ async function savePart() {
         syncPartCountCell();
         showSuccessToast("Part saved successfully!");
     } catch (err) {
-        alert(`Failed to save part: ${err.message}`);
+        showInfoPopup(`Failed to save part: ${err.message}`);
+    } finally {
+        setLoading(btn, false);
     }
 }
 
@@ -2194,7 +2247,7 @@ async function finalizePartDelete(partId) {
         syncPartCountCell();
         showSuccessToast("Part deleted successfully.");
     } catch (err) {
-        alert(`Failed to delete part: ${err.message}`);
+        showInfoPopup(`Failed to delete part: ${err.message}`);
     }
 }
 
@@ -2314,7 +2367,7 @@ function closeAdminUserForm() {
     adminEditingLoginId = null;
 }
 
-async function saveAdminUser() {
+async function saveAdminUser(btn = null) {
     const role = document.getElementById("adminRole").value;
     const active = document.getElementById("adminActive").value === "true";
 
@@ -2327,6 +2380,7 @@ async function saveAdminUser() {
             showSuccessToast("User updated.");
             return;
         }
+        setLoading(btn, true);
         try {
             const res = await fetch(`${API}/admin/users/${adminEditingLoginId}`, {
                 method: "PUT",
@@ -2340,7 +2394,9 @@ async function saveAdminUser() {
             showSuccessToast("User updated successfully.");
             await loadAdminUsers();
         } catch (err) {
-            alert(`Failed to update user: ${err.message}`);
+            showInfoPopup(`Failed to update user: ${err.message}`);
+        } finally {
+            setLoading(btn, false);
         }
     } else {
         const loginID = document.getElementById("adminLoginId").value.trim();
@@ -2359,6 +2415,7 @@ async function saveAdminUser() {
             showSuccessToast("User created.");
             return;
         }
+        setLoading(btn, true);
         try {
             const res = await fetch(`${API}/admin/users`, {
                 method: "POST",
@@ -2372,7 +2429,9 @@ async function saveAdminUser() {
             showSuccessToast("User created successfully.");
             await loadAdminUsers();
         } catch (err) {
-            alert(`Failed to create user: ${err.message}`);
+            showInfoPopup(`Failed to create user: ${err.message}`);
+        } finally {
+            setLoading(btn, false);
         }
     }
 }
@@ -2391,7 +2450,7 @@ function closeAdminPasswordModal() {
     adminPasswordTargetLoginId = null;
 }
 
-async function saveAdminPassword() {
+async function saveAdminPassword(btn = null) {
     const newPwd = document.getElementById("adminNewPassword").value;
     const confirmPwd = document.getElementById("adminConfirmPassword").value;
 
@@ -2405,6 +2464,7 @@ async function saveAdminPassword() {
         return;
     }
 
+    setLoading(btn, true);
     try {
         const res = await fetch(`${API}/admin/users/${adminPasswordTargetLoginId}/password`, {
             method: "PUT",
@@ -2417,7 +2477,9 @@ async function saveAdminPassword() {
         closeAdminPasswordModal();
         showSuccessToast("Password updated successfully.");
     } catch (err) {
-        alert(`Failed to update password: ${err.message}`);
+        showInfoPopup(`Failed to update password: ${err.message}`);
+    } finally {
+        setLoading(btn, false);
     }
 }
 
@@ -2445,7 +2507,7 @@ async function finalizeAdminUserDelete(loginID) {
         showSuccessToast("User deleted successfully.");
         await loadAdminUsers();
     } catch (err) {
-        alert(`Failed to delete user: ${err.message}`);
+        showInfoPopup(`Failed to delete user: ${err.message}`);
     }
 }
 
@@ -2508,7 +2570,7 @@ async function loadAdminSettings() {
     }
 }
 
-async function saveAdminSettings() {
+async function saveAdminSettings(btn = null) {
     const pdfInput = document.getElementById("adminPdfSizeLimit");
     const compressionSelect = document.getElementById("adminImageCompressionEnabled");
     const containerBtnsToggle = document.getElementById("adminShowContainerButtons");
@@ -2527,6 +2589,7 @@ async function saveAdminSettings() {
         return;
     }
 
+    setLoading(btn, true);
     try {
         const res = await fetch(`${API}/admin/settings`, {
             method: "PUT",
@@ -2542,7 +2605,9 @@ async function saveAdminSettings() {
         applyContainerButtonVisibility();
         showSuccessToast("Upload settings saved.");
     } catch (err) {
-        alert(`Failed to save settings: ${err.message}`);
+        showInfoPopup(`Failed to save settings: ${err.message}`);
+    } finally {
+        setLoading(btn, false);
     }
 }
 
