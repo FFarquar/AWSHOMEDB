@@ -80,6 +80,7 @@ jobs:
           BUILD_NUM: ${{ github.run_number }}
         run: |
           printf '{ "build": %s }' "$BUILD_NUM" > frontend/version.json
+          sed -i "s|const CACHE_NAME = '.*'|const CACHE_NAME = 'homedb-v${BUILD_NUM}'|" frontend/sw.js
 
       - name: Patch manifest for Staging
         run: |
@@ -157,6 +158,7 @@ jobs:
           BUILD_NUM: ${{ github.run_number }}
         run: |
           printf '{ "build": %s }' "$BUILD_NUM" > frontend/version.json
+          sed -i "s|const CACHE_NAME = '.*'|const CACHE_NAME = 'homedb-v${BUILD_NUM}'|" frontend/sw.js
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
