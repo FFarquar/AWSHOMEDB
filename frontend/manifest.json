@@ -1,8 +1,8 @@
 {
-  "name": "Home DB (Staging)",
-  "short_name": "HomeDB STG",
+  "name": "Home DB",
+  "short_name": "HomeDB",
   "description": "AWS Home Database - Containers & Items",
-  "id": "/AWSHomeDB-staging/login.html",
+  "id": "/AWSHOMEDB/login.html",
   "start_url": "./login.html",
   "scope": "./",
   "display": "standalone",
