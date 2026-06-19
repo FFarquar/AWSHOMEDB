@@ -81,6 +81,12 @@ jobs:
         run: |
           printf '{ "build": %s }' "$BUILD_NUM" > frontend/version.json
 
+      - name: Patch manifest for Staging
+        run: |
+          sed -i 's/"name": "Home DB"/"name": "Home DB (Staging)"/g' frontend/manifest.json
+          sed -i 's/"short_name": "HomeDB"/"short_name": "HomeDB STG"/g' frontend/manifest.json
+          sed -i 's|"id": "/AWSHOMEDB/login.html"|"id": "/AWSHomeDB-staging/login.html"|g' frontend/manifest.json
+
       - name: Deploy to GitHub Pages (Staging)
         uses: peaceiris/actions-gh-pages@v4
         with:
