@@ -7,6 +7,9 @@ Transform:
 # 🔐 GLOBAL VARIABLES: Automatically injected into EVERY function below
 Globals:
   Function:
+    MemorySize: 256
+    Architectures:
+      - arm64
     Environment:
       Variables:
         TABLE_NAME: !Ref AWSHomeDBTable
@@ -54,7 +57,7 @@ Resources:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
             AuthorizerPayloadFormatVersion: "1.0"
-            AuthorizerResultTtlInSeconds: 0
+            AuthorizerResultTtlInSeconds: 300
             Identity:
               Headers:
                 - Authorization
@@ -617,7 +620,6 @@ Resources:
       Handler: src/handlers/attachments/attachment-create.handler # Updated to your exact project path pattern
       Runtime: nodejs24.x
       CodeUri: .                                                  # Set to root directory like your working function
-      MemorySize: 128
       Timeout: 10
       Environment:
         Variables:
@@ -643,7 +645,6 @@ Resources:
       Handler: src/handlers/attachments/attachment-remove.handler # Updated to your exact project path pattern
       Runtime: nodejs24.x
       CodeUri: .                                                  # Set to root directory like your working function
-      MemorySize: 128
       Timeout: 15
       Environment:
         Variables:

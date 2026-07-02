@@ -6,3 +6,9 @@ window.APP_CONFIG = { API_BASE_URL: "http://localhost:3000",
   USE_MOCK: false
  };
 
+// Namespaces localStorage auth keys by ENVIRONMENT so staging and prod
+// (served from the same origin, different paths) don't clobber each other's auth.
+window.authStorageKey = function (name) {
+  return name + ':' + (window.APP_CONFIG.ENVIRONMENT || 'LOCAL');
+};
+
